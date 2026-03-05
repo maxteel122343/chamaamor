@@ -93,9 +93,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
     };
 
     useEffect(() => {
+        if (!currentUser?.id || !activeTarget?.id) return;
+
         fetchMessages();
-        const subscription = supabase
-            .channel(`chat_${activeTarget.id}`)
+
+        // Create a unique channel for this specific conversation to avoid noise
+        // while still using filters for security/accuracy
+        const channel = supabase.channel(`chat_sync_${currentUser.id}_${activeTarget.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -103,14 +107,37 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 filter: `receiver_id=eq.${currentUser.id}`
             }, (payload) => {
                 const newMsg = payload.new as ChatMessage;
+                // Only add if it's from the person we're talking to
                 if (newMsg.sender_id === activeTarget.id) {
-                    setMessages(prev => [...prev, newMsg]);
+                    setMessages(prev => {
+                        if (prev.find(m => m.id === newMsg.id)) return prev;
+                        return [...prev, newMsg];
+                    });
                 }
             })
-            .subscribe();
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_messages',
+                filter: `sender_id=eq.${currentUser.id}`
+            }, (payload) => {
+                const newMsg = payload.new as ChatMessage;
+                // Sync messages sent from other tabs to the same person
+                if (newMsg.receiver_id === activeTarget.id) {
+                    setMessages(prev => {
+                        if (prev.find(m => m.id === newMsg.id)) return prev;
+                        return [...prev, newMsg];
+                    });
+                }
+            })
+            .subscribe((status) => {
+                console.log(`Chat sync status for ${activeTarget.display_name}:`, status);
+            });
 
-        return () => { subscription.unsubscribe(); };
-    }, [activeTarget.id]);
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [activeTarget.id, currentUser?.id]);
 
     useEffect(() => {
         fetchConversations();
