@@ -130,6 +130,8 @@ export interface PartnerProfile {
     isContact?: boolean;
   };
   custom_ais?: PartnerProfile[];
+  isFavorite?: boolean;
+  callCount?: number;
 }
 
 export const VOICE_META: Record<VoiceName, { gender: 'Male' | 'Female', label: string }> = {

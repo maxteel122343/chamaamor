@@ -840,72 +840,199 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {/* Default AI */}
-                                    <div className={`group relative p-6 rounded-[3rem] border-2 border-transparent hover:border-blue-600/30 transition-all ${cardClasses} cursor-pointer overflow-hidden`} onClick={() => setActiveTab('config')}>
-                                        <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white px-3 py-1 rounded-full">Principal</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                    {/* Default AI Card */}
+                                    <div className={`group relative flex flex-col rounded-[2.5rem] overflow-hidden border-2 border-transparent hover:border-blue-600/30 transition-all duration-500 ${cardClasses} shadow-2xl h-[550px]`}>
+                                        {/* Favorite Icon */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                updateProfileAndSync(prev => ({ ...prev, isFavorite: !prev.isFavorite }));
+                                            }}
+                                            className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-xl transition-all hover:scale-110 active:scale-90"
+                                        >
+                                            {profile.isFavorite ? '❤️' : '🤍'}
+                                        </button>
+
+                                        {/* Info Icon */}
+                                        <button className="absolute top-6 left-6 z-20 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-lg opacity-60 hover:opacity-100 transition-all">
+                                            ℹ️
+                                        </button>
+
+                                        {/* Image Container */}
+                                        <div className="relative h-2/3 overflow-hidden">
+                                            {profile.image ? (
+                                                <img src={profile.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={profile.name} />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-6xl bg-slate-200">📸</div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+                                            <div className="absolute bottom-4 left-6">
+                                                <span className="px-3 py-1 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full">Principal</span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-2 border-blue-500 shadow-xl group-hover:scale-105 transition-transform">
-                                                {profile.image ? <img src={profile.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-4xl bg-slate-100 italic">📸</div>}
+
+                                        {/* Info Panel */}
+                                        <div className="p-6 flex-1 flex flex-col justify-between">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none">{profile.name}</h3>
+                                                    <div className="flex items-center gap-1 mt-2 opacity-50">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest">{profile.gender}</span>
+                                                        <span>•</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest">{LANGUAGE_META[profile.language].label}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Relationship Score Circle */}
+                                                <div className="relative w-12 h-12 flex items-center justify-center">
+                                                    <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                                        <circle cx="24" cy="24" r="20" className="stroke-current opacity-10" strokeWidth="4" fill="transparent" />
+                                                        <circle
+                                                            cx="24" cy="24" r="20"
+                                                            className={`stroke-current ${getRelationshipStatus(profile.relationshipScore).color}`}
+                                                            strokeWidth="4"
+                                                            fill="transparent"
+                                                            strokeDasharray={126}
+                                                            strokeDashoffset={126 - (126 * profile.relationshipScore) / 100}
+                                                            strokeLinecap="round"
+                                                        />
+                                                    </svg>
+                                                    <span className="text-[10px] font-black">{Math.round(profile.relationshipScore)}</span>
+                                                </div>
                                             </div>
-                                            <div className="text-center">
-                                                <h3 className="text-xl font-black italic tracking-tighter uppercase">{profile.name}</h3>
-                                                <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest mt-1">{profile.gender} • {LANGUAGE_META[profile.language].label}</p>
+
+                                            <div className="mt-4 flex flex-col gap-3">
+                                                <div className="flex items-center gap-2 opacity-40">
+                                                    <span className="text-lg">📞</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{profile.callCount || 0} Chamadas Efetuadas</span>
+                                                </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex gap-3">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setActiveTab('chats'); }}
+                                                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-100 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-200 dark:hover:bg-blue-600/20 transition-all"
+                                                    >
+                                                        Chat ✈️
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onStartCall(); }}
+                                                        className="flex-[1.5] flex items-center justify-center gap-2 py-3 bg-green-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                                    >
+                                                        Call 📞
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onStartCall(); }}
-                                                className="w-full py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                                            >
-                                                Entrar na Cam 📞
-                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Custom AIs */}
+                                    {/* Custom AIs Cards */}
                                     {profile.custom_ais?.map((ai, index) => (
-                                        <div key={index} className={`group relative p-6 rounded-[3rem] border-2 border-transparent hover:border-pink-600/30 transition-all ${cardClasses} cursor-pointer overflow-hidden`}>
-                                            <div className="absolute top-0 right-0 p-4 flex gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (confirm("Deseja excluir este perfil?")) {
-                                                            updateProfileAndSync(prev => ({
-                                                                ...prev,
-                                                                custom_ais: prev.custom_ais?.filter((_, i) => i !== index) || []
-                                                            }));
-                                                        }
-                                                    }}
-                                                    className="w-6 h-6 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
-                                                >
-                                                    ✕
-                                                </button>
+                                        <div key={index} className={`group relative flex flex-col rounded-[2.5rem] overflow-hidden border-2 border-transparent hover:border-pink-600/30 transition-all duration-500 ${cardClasses} shadow-2xl h-[550px]`}>
+                                            {/* Favorite Icon */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const updated = [...(profile.custom_ais || [])];
+                                                    updated[index] = { ...updated[index], isFavorite: !updated[index].isFavorite };
+                                                    updateProfileAndSync(prev => ({ ...prev, custom_ais: updated }));
+                                                }}
+                                                className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-xl transition-all hover:scale-110 active:scale-90"
+                                            >
+                                                {ai.isFavorite ? '❤️' : '🤍'}
+                                            </button>
+
+                                            {/* Delete Icon */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm("Deseja excluir este perfil?")) {
+                                                        updateProfileAndSync(prev => ({
+                                                            ...prev,
+                                                            custom_ais: prev.custom_ais?.filter((_, i) => i !== index) || []
+                                                        }));
+                                                    }
+                                                }}
+                                                className="absolute top-6 left-6 z-20 w-10 h-10 rounded-full bg-red-500/10 text-red-500 backdrop-blur-md flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                                            >
+                                                ✕
+                                            </button>
+
+                                            {/* Image Container */}
+                                            <div className="relative h-2/3 overflow-hidden">
+                                                {ai.image ? (
+                                                    <img src={ai.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={ai.name} />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-6xl bg-slate-200">📸</div>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                                             </div>
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-2 border-pink-500 shadow-xl group-hover:scale-105 transition-transform">
-                                                    {ai.image ? <img src={ai.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-4xl bg-slate-100 italic">📸</div>}
+
+                                            {/* Info Panel */}
+                                            <div className="p-6 flex-1 flex flex-col justify-between">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none">{ai.name}</h3>
+                                                        <div className="flex items-center gap-1 mt-2 opacity-50">
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest">{ai.gender}</span>
+                                                            <span>•</span>
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest">{LANGUAGE_META[ai.language].label}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Relationship Score Circle */}
+                                                    <div className="relative w-12 h-12 flex items-center justify-center">
+                                                        <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                                            <circle cx="24" cy="24" r="20" className="stroke-current opacity-10" strokeWidth="4" fill="transparent" />
+                                                            <circle
+                                                                cx="24" cy="24" r="20"
+                                                                className={`stroke-current ${getRelationshipStatus(ai.relationshipScore || 100).color}`}
+                                                                strokeWidth="4"
+                                                                fill="transparent"
+                                                                strokeDasharray={126}
+                                                                strokeDashoffset={126 - (126 * (ai.relationshipScore || 100)) / 100}
+                                                                strokeLinecap="round"
+                                                            />
+                                                        </svg>
+                                                        <span className="text-[10px] font-black">{Math.round(ai.relationshipScore || 100)}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-center">
-                                                    <h3 className="text-xl font-black italic tracking-tighter uppercase">{ai.name}</h3>
-                                                    <p className="text-[9px] font-bold opacity-30 uppercase tracking-widest mt-1">{ai.gender} • {LANGUAGE_META[ai.language].label}</p>
+
+                                                <div className="mt-4 flex flex-col gap-3">
+                                                    <div className="flex items-center gap-2 opacity-40">
+                                                        <span className="text-lg">📞</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">{ai.callCount || 0} Chamadas Efetuadas</span>
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setActiveTab('chats'); }}
+                                                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-pink-100 text-pink-600 dark:bg-pink-600/10 dark:text-pink-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-200 dark:hover:bg-pink-600/20 transition-all"
+                                                        >
+                                                            Chat ✈️
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); onCallPartner(ai, true, 'custom-' + index); }}
+                                                            className="flex-[1.5] flex items-center justify-center gap-2 py-3 bg-green-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                                        >
+                                                            Call 📞
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onCallPartner(ai, true, 'custom-' + index); }}
-                                                    className="w-full py-3 bg-pink-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all shadow-lg shadow-pink-600/20"
-                                                >
-                                                    Entrar na Cam 📞
-                                                </button>
                                             </div>
                                         </div>
                                     ))}
 
-                                    {/* Simple Creation Trigger in Gallery */}
+                                    {/* Creation Trigger Card */}
                                     <button
                                         onClick={() => setShowCreateAiModal(true)}
-                                        className={`flex flex-col items-center justify-center gap-4 p-8 rounded-[3rem] border-2 border-dashed border-inherit opacity-40 hover:opacity-100 hover:border-blue-600 hover:bg-blue-600/5 transition-all text-center min-h-[200px]`}
+                                        className={`flex flex-col items-center justify-center gap-4 p-8 rounded-[2.5rem] border-2 border-dashed border-inherit opacity-40 hover:opacity-100 hover:border-blue-600 hover:bg-blue-600/5 transition-all text-center min-h-[550px]`}
                                     >
-                                        <span className="text-4xl text-blue-600">+</span>
+                                        <div className="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center text-4xl shadow-xl shadow-blue-600/20 transition-transform group-hover:scale-110">
+                                            +
+                                        </div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em]">Materializar Nova IA</p>
                                     </button>
                                 </div>
