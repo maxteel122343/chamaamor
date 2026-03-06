@@ -312,21 +312,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
 
             {/* Main Area */}
             <div className={`flex-1 flex flex-col h-full ${isDark ? 'bg-[#0f1116]' : 'bg-slate-50'}`}>
-                <div className={`p-6 border-b border-white/5 flex items-center gap-4 ${cardClasses}`}>
-                    <div className={`w-12 h-12 rounded-2xl overflow-hidden shadow-lg ${activeIsAi ? 'ring-2 ring-pink-500' : 'ring-2 ring-blue-500'}`}>
-                        {activeIsAi ? (
-                            activeTarget.ai_settings?.image ? <img src={activeTarget.ai_settings.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-pink-500/10 flex items-center justify-center">⚡</div>
-                        ) : (
-                            activeTarget.avatar_url ? <img src={activeTarget.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-blue-500/10 flex items-center justify-center font-bold">👤</div>
-                        )}
-                    </div>
-                    <div>
-                        <h3 className="font-black italic uppercase tracking-tighter text-lg">{activeIsAi ? (activeTarget.ai_settings?.name || activeTarget.display_name) : activeTarget.display_name}</h3>
-                        <div className="flex items-center gap-1.5 pt-0.5">
-                            <div className={`w-2 h-2 rounded-full ${isAiTyping ? 'bg-pink-500 animate-pulse' : 'bg-emerald-500'}`} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{isAiTyping ? 'Digitando...' : 'Online'}</span>
+                <div className={`p-6 border-b border-white/5 flex items-center justify-between ${cardClasses}`}>
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl overflow-hidden shadow-lg ${activeIsAi ? 'ring-2 ring-pink-500' : 'ring-2 ring-blue-500'}`}>
+                            {activeIsAi ? (
+                                activeTarget.ai_settings?.image ? <img src={activeTarget.ai_settings.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-pink-500/10 flex items-center justify-center">⚡</div>
+                            ) : (
+                                activeTarget.avatar_url ? <img src={activeTarget.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-blue-500/10 flex items-center justify-center font-bold">👤</div>
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="font-black italic uppercase tracking-tighter text-lg">{activeIsAi ? (activeTarget.ai_settings?.name || activeTarget.display_name) : activeTarget.display_name}</h3>
+                            <div className="flex items-center gap-1.5 pt-0.5">
+                                <div className={`w-2 h-2 rounded-full ${isAiTyping ? 'bg-pink-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{isAiTyping ? 'Digitando...' : 'Online'}</span>
+                            </div>
                         </div>
                     </div>
+                    {/* Botão fechar para Mobile / Conveniência */}
+                    <button
+                        onClick={onClose}
+                        className="p-3 bg-black/5 dark:bg-white/5 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
 
                 <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
