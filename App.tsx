@@ -57,6 +57,8 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [activePartner, setActivePartner] = useState<PartnerProfile | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
+  const activeCallIdRef = React.useRef<string | null>(null);
+  const profileRef = React.useRef<PartnerProfile>(profile);
   const [callStatus, setCallStatus] = useState<'pending' | 'accepted' | 'rejected' | 'no_answer'>('pending');
   const [callerProfile, setCallerProfile] = useState<UserProfile | null>(null);
   // Track whether the pending INCOMING call is human-to-human (not AI)
@@ -145,6 +147,7 @@ function App() {
 
   // 2. Profile Sync (Debounced database saving)
   useEffect(() => {
+    profileRef.current = profile;
     const syncProfile = async () => {
       if (user && currentUserProfile) {
         await supabase.from('profiles').update({
@@ -458,6 +461,8 @@ function App() {
   useEffect(() => {
     if (!user) return;
 
+    activeCallIdRef.current = activeCallId;
+
     const channel = supabase.channel('calls_realtime')
       .on('postgres_changes', {
         event: 'INSERT',
@@ -470,6 +475,7 @@ function App() {
 
         if (newCall.status === 'pending') {
           setActiveCallId(newCall.id);
+          activeCallIdRef.current = newCall.id;
 
           // Check if user is blocked
           const { data: myProfileInfo } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -485,6 +491,7 @@ function App() {
             setCallerProfile(cProfile);
 
             // Build temporary partner profile from caller's data
+            const currentProfile = profileRef.current;
             const incomingPartner: PartnerProfile = {
               name: newCall.is_ai_call
                 ? (cProfile.ai_settings?.name || `AI ${cProfile.display_name}`)
@@ -515,9 +522,9 @@ function App() {
                 name: cProfile?.display_name,
                 isPartner: false
               },
-              captionsEnabled: profile.captionsEnabled,
-              captionLanguage: profile.captionLanguage,
-              theme: profile.theme
+              captionsEnabled: currentProfile.captionsEnabled,
+              captionLanguage: currentProfile.captionLanguage,
+              theme: currentProfile.theme
             };
             setActivePartner(incomingPartner);
           }
@@ -535,14 +542,13 @@ function App() {
           } else {
             // Human-to-human call
             pendingCallIsHumanRef.current = true;
-            if (profile.isAiReceptionistEnabled) {
+            if (profileRef.current.isAiReceptionistEnabled) {
               console.log("Recepcionista AI Interceptando - Aguardando o usuário decidir...");
-              setActiveCallId(newCall.id);
               setCallReason('receptionist_incoming');
               setAppState('INCOMING');
             } else {
               console.log("Chamada para humano - Ativando INCOMING (WebRTC pendente)");
-              setActiveCallId(newCall.id);
+              setCallReason('human_incoming');
               setAppState('INCOMING');
             }
           }
@@ -555,7 +561,7 @@ function App() {
         filter: `caller_id=eq.${user.id}`
       }, (payload) => {
         const updatedCall = payload.new as any;
-        if (updatedCall.id === activeCallId) {
+        if (updatedCall.id === activeCallIdRef.current) {
           setCallStatus(updatedCall.status);
           if (updatedCall.status === 'accepted') {
             if (isOutboundHumanCallRef.current) {
@@ -573,6 +579,7 @@ function App() {
             setTimeout(() => {
               setAppState('SETUP');
               setActiveCallId(null);
+              activeCallIdRef.current = null;
             }, 3000);
           }
         }
@@ -583,7 +590,8 @@ function App() {
   }, [user, activeCallId]);
 
   const evaluateAiDecision = async (call: any) => {
-    const p = profile.personality.toLowerCase();
+    const currentProfile = profileRef.current;
+    const p = currentProfile.personality.toLowerCase();
 
     // 1. Explicit User Instructions
     if (p.includes("sempre rejeitar") || p.includes("não atenda estranhos")) return false;
@@ -600,7 +608,7 @@ function App() {
     }
 
     // 3. Status/Relationship Score
-    if (profile.relationshipScore < 20) return Math.random() > 0.5;
+    if (currentProfile.relationshipScore < 20) return Math.random() > 0.5;
 
     // 4. Outbound call logic (Adaptive: AI is harder to reach if the user is a refuser)
     if (user && call.target_id === user.id && call.caller_id === user.id) {
@@ -608,7 +616,7 @@ function App() {
       let chanceOfDeclining = 0.25; // 25% baseline
 
       // If user refused 2 or more times today, AI becomes "harder" (50% chance of declining)
-      if ((profile.dailyRefusalCount || 0) >= 2) {
+      if ((currentProfile.dailyRefusalCount || 0) >= 2) {
         chanceOfDeclining = 0.50;
       }
 
