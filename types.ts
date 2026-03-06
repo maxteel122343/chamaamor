@@ -48,7 +48,7 @@ export enum CallbackIntensity {
   HIGH = 'Alta (Obsessivo/Grudento)'
 }
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light' | 'pink';
 
 export interface CallLog {
   id: string;
@@ -132,7 +132,16 @@ export interface PartnerProfile {
   custom_ais?: PartnerProfile[];
   isFavorite?: boolean;
   callCount?: number;
+  ringtoneUrl?: string;
+  ringtoneName?: string;
 }
+
+export const DEFAULT_RINGTONES = [
+  { id: 'classic_ring', name: 'Clássico Digital', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+  { id: 'zen_garden', name: 'Jardim Zen', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+  { id: 'electro_pulse', name: 'Pulso Elétrico', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
+  { id: 'iphone_style', name: 'Aura Moderna', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' }
+];
 
 export const VOICE_META: Record<VoiceName, { gender: 'Male' | 'Female', label: string }> = {
   [VoiceName.Puck]: { gender: 'Male', label: 'Masculino (Suave)' },

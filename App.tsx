@@ -704,7 +704,7 @@ function App() {
           partner={activePartner}
           isCaller={isHumanCallCaller}
           userId={user?.id || ''}
-          isDark={profile.theme === 'dark'}
+          theme={profile.theme}
           onEnd={() => {
             setAppState('SETUP');
             setActiveCallId(null);

@@ -8,7 +8,7 @@ interface HumanCallScreenProps {
     isCaller: boolean;               // true = I started the call; false = I received it
     userId: string;
     onEnd: () => void;
-    isDark?: boolean;
+    theme: 'dark' | 'light' | 'pink';
 }
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -19,7 +19,7 @@ const ICE_SERVERS: RTCConfiguration = {
 };
 
 export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
-    callId, partner, isCaller, userId, onEnd, isDark = false
+    callId, partner, isCaller, userId, onEnd, theme
 }) => {
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -167,8 +167,11 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
         setMuted(m => !m);
     };
 
+    const isDark = theme === 'dark';
+    const isPink = theme === 'pink';
+
     return (
-        <div className={`fixed inset-0 z-[200] flex flex-col items-center justify-between p-12 overflow-hidden transition-all ${isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
+        <div className={`fixed inset-0 z-[200] flex flex-col items-center justify-between p-12 overflow-hidden transition-all ${isPink ? 'bg-[#fffafa] text-[#912d4a]' : isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
             {/* Ambient background from partner photo */}
             {partner.image && (
                 <div
@@ -188,7 +191,7 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
 
             {/* Avatar */}
             <div className="z-10 flex flex-col items-center gap-8">
-                <div className={`w-44 h-44 rounded-[3rem] overflow-hidden border-4 shadow-2xl ${status === 'connected' ? 'ring-4 ring-emerald-500/40 animate-pulse-slow' : ''} ${isDark ? 'border-white/10' : 'border-white shadow-blue-500/10'}`}>
+                <div className={`w-44 h-44 rounded-[3rem] overflow-hidden border-4 shadow-2xl ${status === 'connected' ? (isPink ? 'ring-4 ring-pink-500/40 animate-pulse-slow' : 'ring-4 ring-emerald-500/40 animate-pulse-slow') : ''} ${isPink ? 'border-pink-100 shadow-pink-200/50' : isDark ? 'border-white/10' : 'border-white shadow-blue-500/10'}`}>
                     {partner.image ? (
                         <img src={partner.image} alt={partner.name} className="w-full h-full object-cover" />
                     ) : (
@@ -206,7 +209,7 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                 {/* Mute */}
                 <button
                     onClick={toggleMute}
-                    className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 ${muted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : isDark ? 'bg-white/10 text-white/60' : 'bg-black/10 text-slate-600'}`}
+                    className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 ${muted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-white/10 text-white/60' : 'bg-black/10 text-slate-600'}`}
                 >
                     {muted ? (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -231,7 +234,7 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                 </button>
 
                 {/* Speaker (cosmetic placeholder) */}
-                <button className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 ${isDark ? 'bg-white/10 text-white/60' : 'bg-black/10 text-slate-600'}`}>
+                <button className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-95 ${isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-white/10 text-white/60' : 'bg-black/10 text-slate-600'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6a7 7 0 010 12" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />

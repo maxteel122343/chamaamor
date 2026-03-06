@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Mood, VoiceName, Accent, PartnerProfile, MOOD_EMOJIS, VOICE_META, ACCENT_META, CallbackIntensity, CallLog, ScheduledCall, PlatformLanguage, LANGUAGE_META, UserProfile } from '../types';
+import { Mood, VoiceName, Accent, PartnerProfile, MOOD_EMOJIS, VOICE_META, ACCENT_META, CallbackIntensity, CallLog, ScheduledCall, PlatformLanguage, LANGUAGE_META, UserProfile, DEFAULT_RINGTONES } from '../types';
 import { ContactList } from './ContactList';
 import { AuthModal } from './AuthModal';
 import { CalendarTab } from './CalendarTab';
@@ -60,6 +60,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
     const fileInputRef = useRef<HTMLInputElement>(null);
     const userFileInputRef = useRef<HTMLInputElement>(null);
     const historyInputRef = useRef<HTMLInputElement>(null);
+    const ringtoneInputRef = useRef<HTMLInputElement>(null);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [activeChat, setActiveChatState] = useState<{ profile: UserProfile, isAi: boolean } | null>(() => {
         const saved = sessionStorage.getItem('warm_activeChat');
@@ -76,11 +77,13 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
     };
 
     const isDark = profile.theme === 'dark';
-    const isLight = !isDark;
-    const themeClasses = isLight ? "bg-[#f9f9fb] text-slate-900" : "bg-[#0b0c10] text-slate-100";
-    const cardClasses = isLight ? "bg-white border-slate-100 shadow-sm" : "bg-[#15181e] border-white/5 shadow-xl";
-    const inputClasses = isLight ? "bg-slate-50 border-slate-100 focus:border-blue-500 text-slate-900" : "bg-[#0b0c10] border-white/5 focus:border-blue-500 text-white";
-    const borderClass = isLight ? "border-slate-100" : "border-white/5";
+    const isPink = profile.theme === 'pink';
+    const isLight = profile.theme === 'light';
+
+    const themeClasses = isPink ? "bg-[#fffafa] text-[#912d4a]" : isLight ? "bg-[#f9f9fb] text-slate-900" : "bg-[#0b0c10] text-slate-100";
+    const cardClasses = isPink ? "bg-white border-[#ffdada] shadow-[0_10px_40px_-15px_rgba(255,182,193,0.3)]" : isLight ? "bg-white border-slate-100 shadow-sm" : "bg-[#15181e] border-white/5 shadow-xl";
+    const inputClasses = isPink ? "bg-[#fffcfc] border-[#ffc5ca] focus:border-rose-400 text-[#912d4a]" : isLight ? "bg-slate-50 border-slate-100 focus:border-blue-500 text-slate-900" : "bg-[#0b0c10] border-white/5 focus:border-blue-500 text-white";
+    const borderClass = isPink ? "border-[#ffdada]" : isLight ? "border-slate-100" : "border-white/5";
 
     const getRelationshipStatus = (score: number) => {
         if (score < 20) return { label: 'Tóxica', color: 'text-blue-500', bar: 'bg-blue-500', tip: 'Cuidado! A relação está por um fio. Ligue e peça desculpas ou seja carinhoso.' };
@@ -206,6 +209,26 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
             const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
             onUpdateUserProfile({ ...currentUserProfile, avatar_url: data.publicUrl });
             setIsSavingImage(false);
+        }
+    };
+
+    const handleRingtoneUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && user) {
+            setIsSavingProfile(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/ringtone_${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
+
+            if (uploadError) {
+                alert("Erro ao fazer upload do toque.");
+                setIsSavingProfile(false);
+                return;
+            }
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+            updateProfileAndSync(prev => ({ ...prev, ringtoneUrl: data.publicUrl, ringtoneName: file.name }));
+            setIsSavingProfile(false);
         }
     };
 
@@ -530,16 +553,21 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                     ))}
                 </nav>
 
-                {/* Theme Toggle at Sidebar Bottom */}
+                {/* Theme Cycle at Sidebar Bottom */}
                 <div className="px-3">
                     <button
-                        onClick={() => updateProfileAndSync(prev => ({ ...prev, theme: isDark ? 'light' : 'dark' }))}
+                        onClick={() => {
+                            const nextTheme = profile.theme === 'light' ? 'dark' : profile.theme === 'dark' ? 'pink' : 'light';
+                            updateProfileAndSync(prev => ({ ...prev, theme: nextTheme }));
+                        }}
                         className={`w-full p-3.5 rounded-2xl flex items-center gap-4 transition-all duration-300 border ${cardClasses} hover:bg-black/5 dark:hover:bg-white/5`}
                     >
-                        <span className="text-xl flex-shrink-0">{isDark ? '☀️' : '🌙'}</span>
+                        <span className="text-xl flex-shrink-0">
+                            {profile.theme === 'light' ? '🌙' : profile.theme === 'dark' ? '🌸' : '☀️'}
+                        </span>
                         {isSidebarExpanded && (
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate animate-in fade-in slide-in-from-left-4 duration-500">
-                                {isDark ? 'Modo Claro' : 'Modo Escuro'}
+                                {profile.theme === 'light' ? 'Modo Escuro' : profile.theme === 'dark' ? 'Modo Pink' : 'Modo Claro'}
                             </span>
                         )}
                     </button>
@@ -559,7 +587,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
 
 
                 {/* Top Header - Controls & Profile */}
-                <header className={`w-full sticky top-0 z-[60] px-3 md:px-8 py-3 md:py-6 flex justify-end items-center ${isLight ? 'bg-[#f9f9fb]/80' : 'bg-[#0b0c10]/40'} backdrop-blur-xl transition-all`}>
+                <header className={`w-full sticky top-0 z-[60] px-3 md:px-8 py-3 md:py-6 flex justify-end items-center ${isPink ? 'bg-[#fffafa]/40' : isLight ? 'bg-[#f9f9fb]/80' : 'bg-[#0b0c10]/40'} backdrop-blur-xl transition-all`}>
                     <div className="flex items-center gap-2 md:gap-5">
                         {user && (
                             <button
@@ -1273,6 +1301,61 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                     </div>
                                 </div>
 
+                                {/* Section: Ringtone / Toque Musical */}
+                                <div className={`p-10 rounded-[3rem] border ${cardClasses}`}>
+                                    <h3 className="text-sm font-bold uppercase tracking-widest mb-10 opacity-30">Toque Musical da Chamada</h3>
+
+                                    <div className="space-y-8">
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-20 mb-6 ml-2 text-center sm:text-left">Sons Pré-definidos</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                {DEFAULT_RINGTONES.map((rt) => (
+                                                    <button
+                                                        key={rt.id}
+                                                        onClick={() => updateProfileAndSync(prev => ({ ...prev, ringtoneUrl: rt.url, ringtoneName: rt.name }))}
+                                                        className={`p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all relative overflow-hidden group ${profile.ringtoneUrl === rt.url ? 'border-blue-600 bg-blue-600/5 shadow-inner' : borderClass + ' hover:border-blue-300'}`}
+                                                    >
+                                                        {profile.ringtoneUrl === rt.url && (
+                                                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                                                        )}
+                                                        <span className="text-2xl group-hover:scale-110 transition-transform">🔔</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70 text-center">{rt.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-dashed border-white/10">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-20 mb-6 ml-2 text-center sm:text-left">Upload de Toque Customizado</p>
+                                            <input
+                                                type="file"
+                                                accept="audio/mp3,audio/wav,audio/mpeg"
+                                                className="hidden"
+                                                ref={ringtoneInputRef}
+                                                onChange={handleRingtoneUpload}
+                                            />
+                                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                                                <button
+                                                    onClick={() => ringtoneInputRef.current?.click()}
+                                                    className={`w-full sm:w-auto px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3 ${isPink ? 'bg-pink-100 text-pink-600 shadow-pink-200/50' : 'bg-blue-600 text-white shadow-blue-500/20'}`}
+                                                >
+                                                    <span>📤</span>
+                                                    Fazer Upload MP3
+                                                </button>
+                                                {profile.ringtoneName && (
+                                                    <div className="flex flex-col">
+                                                        <p className="text-[9px] font-bold uppercase tracking-wider opacity-30 mb-1">Toque Ativo</p>
+                                                        <p className={`text-[11px] font-black uppercase tracking-widest ${isPink ? 'text-pink-600' : 'text-blue-500'}`}>
+                                                            {profile.ringtoneName}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="mt-6 text-[9px] font-medium opacity-30 italic">O toque selecionado será reproduzido quando você receber uma chamada de voz da IA ou de outros usuários.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Section: Personality & Context */}
                                 <div className={`p-10 rounded-[3rem] border ${cardClasses}`}>
                                     <h3 className="text-sm font-bold uppercase tracking-widest mb-10 opacity-30">Motor de Personalidade</h3>
@@ -1508,150 +1591,156 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
             {showAuth && <AuthModal onClose={() => setShowAuth(false)} isDark={isDark} />}
 
             {/* Notifications Modal */}
-            {showNotifications && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-xl animate-in fade-in duration-500">
-                    <div className={`w-full max-w-md p-10 rounded-[4rem] border shadow-[0_48px_80px_-20px_rgba(0,0,0,0.6)] transform animate-in slide-in-from-bottom-12 duration-700 ${cardClasses}`}>
-                        <div className="flex justify-between items-start mb-10">
-                            <div>
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Fluxos de Memória</h3>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-20">Histórico de Interações</p>
+            {
+                showNotifications && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-xl animate-in fade-in duration-500">
+                        <div className={`w-full max-w-md p-10 rounded-[4rem] border shadow-[0_48px_80px_-20px_rgba(0,0,0,0.6)] transform animate-in slide-in-from-bottom-12 duration-700 ${cardClasses}`}>
+                            <div className="flex justify-between items-start mb-10">
+                                <div>
+                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase">Fluxos de Memória</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-20">Histórico de Interações</p>
+                                </div>
+                                <button onClick={() => setShowNotifications(false)} className="w-10 h-10 flex items-center justify-center opacity-30 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-xl">✕</button>
                             </div>
-                            <button onClick={() => setShowNotifications(false)} className="w-10 h-10 flex items-center justify-center opacity-30 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-xl">✕</button>
-                        </div>
 
-                        <div className="flex gap-2 mb-6">
-                            <button onClick={downloadHistory} className={`p-3 rounded-2xl hover:bg-blue-500/10 text-blue-500 transition-all border ${borderClass}`}>📥 Exportar</button>
-                            <button onClick={clearHistory} className={`p-3 rounded-2xl hover:bg-red-500/10 text-red-500 transition-all border ${borderClass}`}>🗑️ Limpar</button>
-                        </div>
+                            <div className="flex gap-2 mb-6">
+                                <button onClick={downloadHistory} className={`p-3 rounded-2xl hover:bg-blue-500/10 text-blue-500 transition-all border ${borderClass}`}>📥 Exportar</button>
+                                <button onClick={clearHistory} className={`p-3 rounded-2xl hover:bg-red-500/10 text-red-500 transition-all border ${borderClass}`}>🗑️ Limpar</button>
+                            </div>
 
-                        <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar">
-                            {profile.history.length === 0 ? (
-                                <p className="text-center py-12 opacity-20 italic text-sm">Nenhuma lembrança registrada.</p>
-                            ) : (
-                                profile.history.slice().reverse().map(log => (
-                                    <div key={log.id} className={`p-5 rounded-[2rem] border flex items-center gap-4 group transition-all hover:border-blue-500/30 ${isDark ? 'bg-[#0b0c10] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                        <div className="w-12 h-12 rounded-full bg-white dark:bg-white/5 flex items-center justify-center text-xl shadow-sm">
-                                            {MOOD_EMOJIS[log.moodEnd]}
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar">
+                                {profile.history.length === 0 ? (
+                                    <p className="text-center py-12 opacity-20 italic text-sm">Nenhuma lembrança registrada.</p>
+                                ) : (
+                                    profile.history.slice().reverse().map(log => (
+                                        <div key={log.id} className={`p-5 rounded-[2rem] border flex items-center gap-4 group transition-all hover:border-blue-500/30 ${isDark ? 'bg-[#0b0c10] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                            <div className="w-12 h-12 rounded-full bg-white dark:bg-white/5 flex items-center justify-center text-xl shadow-sm">
+                                                {MOOD_EMOJIS[log.moodEnd]}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[13px] font-bold truncate tracking-tight">{log.notes || "Conversa encerrada"}</p>
+                                                <p className="text-[10px] opacity-40 font-bold uppercase mt-1">{new Date(log.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-bold truncate tracking-tight">{log.notes || "Conversa encerrada"}</p>
-                                            <p className="text-[10px] opacity-40 font-bold uppercase mt-1">{new Date(log.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Profile Modal */}
-            {showProfileModal && currentUserProfile && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-xl animate-in fade-in duration-500">
-                    <div className={`w-full max-w-md p-10 rounded-[4rem] border shadow-[0_48px_80px_-20px_rgba(0,0,0,0.6)] transform animate-in slide-in-from-bottom-12 duration-700 ${cardClasses}`}>
-                        <div className="flex justify-between items-start mb-10">
-                            <div>
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Meu Perfil</h3>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-20">Identidade e Conexões</p>
+            {
+                showProfileModal && currentUserProfile && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-xl animate-in fade-in duration-500">
+                        <div className={`w-full max-w-md p-10 rounded-[4rem] border shadow-[0_48px_80px_-20px_rgba(0,0,0,0.6)] transform animate-in slide-in-from-bottom-12 duration-700 ${cardClasses}`}>
+                            <div className="flex justify-between items-start mb-10">
+                                <div>
+                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase">Meu Perfil</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-20">Identidade e Conexões</p>
+                                </div>
+                                <button onClick={() => setShowProfileModal(false)} className="w-10 h-10 flex items-center justify-center opacity-30 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-xl">✕</button>
                             </div>
-                            <button onClick={() => setShowProfileModal(false)} className="w-10 h-10 flex items-center justify-center opacity-30 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-xl">✕</button>
-                        </div>
 
-                        <div className="space-y-8">
-                            {/* Photo Upload */}
-                            <div className="flex flex-col items-center gap-6">
-                                <div
-                                    onClick={() => userFileInputRef.current?.click()}
-                                    className={`w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl transition-all hover:scale-105 cursor-pointer ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-white'}`}
+                            <div className="space-y-8">
+                                {/* Photo Upload */}
+                                <div className="flex flex-col items-center gap-6">
+                                    <div
+                                        onClick={() => userFileInputRef.current?.click()}
+                                        className={`w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl transition-all hover:scale-105 cursor-pointer ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-white'}`}
+                                    >
+                                        {isSavingImage ? (
+                                            <div className="w-full h-full flex items-center justify-center bg-blue-500/10">
+                                                <span className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        ) : currentUserProfile.avatar_url ? (
+                                            <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-4xl opacity-10">📸</div>
+                                        )}
+                                    </div>
+                                    <input ref={userFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUserImageUpload} />
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Clique para alterar foto</p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Nome de Usuário</label>
+                                        <input
+                                            type="text"
+                                            value={currentUserProfile.display_name || ''}
+                                            onChange={e => onUpdateUserProfile({ ...currentUserProfile, display_name: e.target.value })}
+                                            className={`w-full p-6 rounded-[2rem] border text-sm font-bold outline-none transition-all ${inputClasses}`}
+                                            placeholder="Seu nome real"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Apelido Carinhoso (Para a IA)</label>
+                                        <input
+                                            type="text"
+                                            value={currentUserProfile.nickname || ''}
+                                            onChange={e => onUpdateUserProfile({ ...currentUserProfile, nickname: e.target.value })}
+                                            className={`w-full p-6 rounded-[2rem] border text-sm font-bold outline-none transition-all ${inputClasses}`}
+                                            placeholder="Ex: Amor, Vida, Bebê..."
+                                        />
+                                        <p className="text-[9px] opacity-30 mt-2 ml-4 lowercase">Como a AI deve chamar você durante as conversas</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 pt-4">
+                                        <div className={`p-5 rounded-[2rem] border flex items-center justify-between ${isDark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                                            <div>
+                                                <p className="text-[9px] font-black opacity-30 uppercase tracking-widest italic mb-1">Meu Número</p>
+                                                <p className="text-lg font-black italic tracking-tighter text-blue-600">
+                                                    {formatDisplayNumber(currentUserProfile.personal_number, false)}
+                                                </p>
+                                            </div>
+                                            <button onClick={() => copyToClipboard(currentUserProfile.personal_number)} className="p-3 bg-blue-600/10 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all">
+                                                📋
+                                            </button>
+                                        </div>
+                                        <div className={`p-5 rounded-[2rem] border flex items-center justify-between ${isDark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                                            <div>
+                                                <p className="text-[9px] font-black opacity-30 uppercase tracking-widest italic mb-1">Número da IA (Público)</p>
+                                                <p className="text-lg font-black italic tracking-tighter text-pink-600">
+                                                    {formatDisplayNumber(currentUserProfile.ai_number, true)}
+                                                </p>
+                                            </div>
+                                            <button onClick={() => copyToClipboard(currentUserProfile.ai_number)} className="p-3 bg-pink-600/10 text-pink-600 rounded-xl hover:bg-pink-600 hover:text-white transition-all">
+                                                📋
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={saveUserProfile}
+                                    disabled={isSavingProfile}
+                                    className="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all text-[11px] disabled:opacity-50"
                                 >
-                                    {isSavingImage ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-blue-500/10">
-                                            <span className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                        </div>
-                                    ) : currentUserProfile.avatar_url ? (
-                                        <img src={currentUserProfile.avatar_url} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-10">📸</div>
-                                    )}
-                                </div>
-                                <input ref={userFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUserImageUpload} />
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Clique para alterar foto</p>
+                                    {isSavingProfile ? "Salvando..." : "Salvar Alterações"}
+                                </button>
                             </div>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Nome de Usuário</label>
-                                    <input
-                                        type="text"
-                                        value={currentUserProfile.display_name || ''}
-                                        onChange={e => onUpdateUserProfile({ ...currentUserProfile, display_name: e.target.value })}
-                                        className={`w-full p-6 rounded-[2rem] border text-sm font-bold outline-none transition-all ${inputClasses}`}
-                                        placeholder="Seu nome real"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Apelido Carinhoso (Para a IA)</label>
-                                    <input
-                                        type="text"
-                                        value={currentUserProfile.nickname || ''}
-                                        onChange={e => onUpdateUserProfile({ ...currentUserProfile, nickname: e.target.value })}
-                                        className={`w-full p-6 rounded-[2rem] border text-sm font-bold outline-none transition-all ${inputClasses}`}
-                                        placeholder="Ex: Amor, Vida, Bebê..."
-                                    />
-                                    <p className="text-[9px] opacity-30 mt-2 ml-4 lowercase">Como a AI deve chamar você durante as conversas</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 pt-4">
-                                    <div className={`p-5 rounded-[2rem] border flex items-center justify-between ${isDark ? 'bg-white/5' : 'bg-slate-50'}`}>
-                                        <div>
-                                            <p className="text-[9px] font-black opacity-30 uppercase tracking-widest italic mb-1">Meu Número</p>
-                                            <p className="text-lg font-black italic tracking-tighter text-blue-600">
-                                                {formatDisplayNumber(currentUserProfile.personal_number, false)}
-                                            </p>
-                                        </div>
-                                        <button onClick={() => copyToClipboard(currentUserProfile.personal_number)} className="p-3 bg-blue-600/10 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all">
-                                            📋
-                                        </button>
-                                    </div>
-                                    <div className={`p-5 rounded-[2rem] border flex items-center justify-between ${isDark ? 'bg-white/5' : 'bg-slate-50'}`}>
-                                        <div>
-                                            <p className="text-[9px] font-black opacity-30 uppercase tracking-widest italic mb-1">Número da IA (Público)</p>
-                                            <p className="text-lg font-black italic tracking-tighter text-pink-600">
-                                                {formatDisplayNumber(currentUserProfile.ai_number, true)}
-                                            </p>
-                                        </div>
-                                        <button onClick={() => copyToClipboard(currentUserProfile.ai_number)} className="p-3 bg-pink-600/10 text-pink-600 rounded-xl hover:bg-pink-600 hover:text-white transition-all">
-                                            📋
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={saveUserProfile}
-                                disabled={isSavingProfile}
-                                className="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.3em] shadow-2xl shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all text-[11px] disabled:opacity-50"
-                            >
-                                {isSavingProfile ? "Salvando..." : "Salvar Alterações"}
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {activeChat && (
-                <ChatWindow
-                    currentUser={user}
-                    targetProfile={activeChat.profile}
-                    isAi={activeChat.isAi}
-                    onClose={() => setActiveChat(null)}
-                    isDark={isDark}
-                    apiKey={apiKey}
-                    chatApiKey={profile.chat_gemini_api_key}
-                    chatModel={profile.chat_model}
-                />
-            )}
+            {
+                activeChat && (
+                    <ChatWindow
+                        currentUser={user}
+                        targetProfile={activeChat.profile}
+                        isAi={activeChat.isAi}
+                        onClose={() => setActiveChat(null)}
+                        theme={profile.theme}
+                        apiKey={apiKey}
+                        chatApiKey={profile.chat_gemini_api_key}
+                        chatModel={profile.chat_model}
+                    />
+                )
+            }
 
-        </div>
+        </div >
     );
 };

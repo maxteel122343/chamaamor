@@ -83,6 +83,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({ profile, callReason, onE
   const personalityPatternsRef = useRef<{ pattern: string; status: 'observed' | 'testing' | 'confirmed'; count: number }[]>([]);
 
   const isDark = profile.theme === 'dark';
+  const isPink = profile.theme === 'pink';
 
   useEffect(() => {
     startCall();
@@ -1130,7 +1131,7 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
   }
 
   return (
-    <div className={`h-screen w-full flex flex-col overflow-hidden relative ${isDark ? 'bg-[#0b0c10]' : 'bg-[#f4f7fa]'}`}>
+    <div className={`h-screen w-full flex flex-col overflow-hidden relative ${isPink ? 'bg-[#fffafa]' : isDark ? 'bg-[#0b0c10]' : 'bg-[#f4f7fa]'}`}>
       <style>{`
         @keyframes progress {
           0% { transform: translateX(-100%); }
@@ -1139,45 +1140,51 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
       `}</style>
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Header Info Layer */}
       <div className="absolute top-0 left-0 w-full p-4 sm:p-6 z-20 flex flex-col sm:flex-row justify-between items-start gap-4 pointer-events-none">
-        <div className={`flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-2xl shadow-xl transition-all pointer-events-auto border ${isDark ? 'bg-white/5 border-white/5 backdrop-blur-md' : 'bg-white border-slate-100 shadow-slate-200'}`}>
-          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center overflow-hidden border ${isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-50 border-slate-100'}`}>
+        <div className={`flex items-center gap-2 sm:gap-4 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl shadow-xl pointer-events-auto transition-all animate-in slide-in-from-right-8 border ${isPink ? 'bg-white/80 border-[#ffdada] backdrop-blur-md text-[#912d4a]' : isDark ? 'bg-white/5 border-white/5 backdrop-blur-md text-white' : 'bg-white border-slate-100 shadow-slate-200 text-slate-900'}`}>
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center overflow-hidden border ${isPink ? 'bg-pink-50 border-[#ffccd2]' : isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-50 border-slate-100'}`}>
             {profile.image ? <img src={profile.image} className="w-full h-full object-cover" /> : <span className="text-lg sm:text-xl">👤</span>}
           </div>
           <div>
             <h1 className="text-xs sm:text-sm font-bold tracking-tight">{profile.name}</h1>
-            <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-40`}>Accent: {ACCENT_META[profile.accent].label}</p>
+            <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-40">Accent: {ACCENT_META[profile.accent].label}</p>
           </div>
         </div>
-        <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[8px] sm:text-[10px] font-bold tracking-widest border transition-all pointer-events-auto ${isConnected ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-          {isConnected ? "LIVE ●" : "CONNECTING..."}
+
+        <div className={`flex items-center gap-2 sm:gap-4 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl shadow-xl pointer-events-auto transition-all animate-in slide-in-from-right-8 border ${isPink ? 'bg-white/80 border-[#ffdada] backdrop-blur-md text-[#912d4a]' : isDark ? 'bg-white/5 border-white/5 backdrop-blur-md text-white' : 'bg-white border-slate-100 shadow-slate-200 text-slate-900'}`}>
+          <div className="flex flex-col items-end">
+            <p className="text-[7px] font-bold opacity-30 uppercase tracking-tighter mb-0.5">Connection Status</p>
+            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isConnected ? (isPink ? 'bg-pink-500 animate-pulse' : 'bg-green-500 animate-pulse') : 'bg-red-500'}`} />
+          </div>
+          <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest">{isConnected ? (isPink ? 'CONECTADO 🌸' : 'CONECTADO') : (profile.theme === 'light' ? 'OFFLINE' : 'OFFLINE')}</p>
         </div>
       </div>
 
       {gestureFeedback && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 animate-bounce-in pointer-events-none">
-          <div className="bg-black/80 backdrop-blur-md text-white text-3xl font-bold px-8 py-4 rounded-2xl border-2 border-pink-500 shadow-lg flex items-center gap-4">
+          <div className={`bg-black/80 backdrop-blur-md text-white text-3xl font-bold px-8 py-4 rounded-2xl border-2 ${isPink ? 'border-pink-500 shadow-pink-500/50' : 'border-blue-500 shadow-blue-500/50'} shadow-lg flex items-center gap-4`}>
             {gestureFeedback}
           </div>
         </div>
       )}
 
       <div className="flex-1 flex flex-col md:flex-row relative">
-        <div className={`flex-1 min-h-[40vh] md:min-h-0 relative transition-all ${isDark ? 'bg-black border-b md:border-b-0 md:border-r border-white/5 shadow-2xl z-10' : 'bg-slate-100 border-b md:border-b-0 md:border-r border-slate-200 shadow-inner'}`}>
+        <div className={`flex-1 min-h-[40vh] md:min-h-0 relative transition-all ${isPink ? 'bg-pink-50/50' : isDark ? 'bg-black border-b md:border-b-0 md:border-r border-white/5 shadow-2xl z-10' : 'bg-slate-100 border-b md:border-b-0 md:border-r border-slate-200 shadow-inner'}`}>
           <video ref={videoRef} muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
 
           {/* CC Indicator Badge (Bottom Right of Camera) */}
           {profile.captionsEnabled && !captionText && (
             <div className="absolute bottom-6 right-6 z-20 pointer-events-none">
-              <span className="bg-white/10 backdrop-blur-md text-white/50 text-[9px] font-black px-3 py-1.5 rounded-full tracking-widest border border-white/10 uppercase tracking-[0.2em] animate-pulse flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+              <span className={`backdrop-blur-md text-[9px] font-black px-3 py-1.5 rounded-full tracking-widest border uppercase tracking-[0.2em] animate-pulse flex items-center gap-2 ${isPink ? 'bg-pink-100/50 text-pink-600 border-pink-200' : 'bg-white/10 text-white/50 border-white/10'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isPink ? 'bg-pink-500 shadow-[0_0_8px_rgba(244,114,182,0.6)]' : 'bg-pink-500'}`} />
                 Legendas Ativas
               </span>
             </div>
           )}
 
           {/* Local Camera badge */}
-          <div className={`absolute bottom-6 left-6 px-4 py-2 rounded-2xl flex items-center gap-4 backdrop-blur-md shadow-lg ${isDark ? 'bg-black/60 text-white' : 'bg-white/90 text-slate-900'}`}>
+          <div className={`absolute bottom-6 left-6 px-4 py-2 rounded-2xl flex items-center gap-4 backdrop-blur-md shadow-lg ${isPink ? 'bg-white/80 text-[#912d4a]' : isDark ? 'bg-black/60 text-white' : 'bg-white/90 text-slate-900'}`}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Local Camera</span>
@@ -1187,7 +1194,7 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
               {[1, 2, 3, 4, 5].map(i => (
                 <div
                   key={i}
-                  className={`w-1 rounded-full transition-all duration-75 ${isDark ? 'bg-blue-400' : 'bg-blue-600'}`}
+                  className={`w-1 rounded-full transition-all duration-75 ${isPink ? 'bg-pink-400' : isDark ? 'bg-blue-400' : 'bg-blue-600'}`}
                   style={{ height: `${Math.max(20, Math.min(100, micLevel * (0.5 + Math.random())))}%` }}
                 />
               ))}
@@ -1195,27 +1202,27 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
           </div>
         </div>
 
-        <div ref={partnerVideoRef} className={`flex-1 min-h-[50vh] md:min-h-0 relative flex items-center justify-center overflow-hidden transition-all duration-500 ${isDark ? 'bg-[#0b0c10]' : 'bg-[#eef2f7]'}`}>
+        <div ref={partnerVideoRef} className={`flex-1 min-h-[50vh] md:min-h-0 relative flex items-center justify-center overflow-hidden transition-all duration-500 ${isPink ? 'bg-[#fffafa]' : isDark ? 'bg-[#0b0c10]' : 'bg-[#eef2f7]'}`}>
           {profile.image && (
-            <div className="absolute inset-0 opacity-30 blur-[120px] scale-150 z-0" style={{ backgroundImage: `url(${profile.image})`, backgroundSize: 'cover' }} />
+            <div className={`absolute inset-0 opacity-30 blur-[120px] scale-150 z-0 ${isPink ? 'mix-blend-multiply' : ''}`} style={{ backgroundImage: `url(${profile.image})`, backgroundSize: 'cover' }} />
           )}
 
           {/* AI Audio Visualization (Soft Glow) */}
           <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${aiLevel > 10 ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="w-[30rem] h-[30rem] rounded-full bg-blue-500/10 blur-[80px] animate-pulse-slow" />
+            <div className={`w-[30rem] h-[30rem] rounded-full blur-[80px] animate-pulse-slow ${isPink ? 'bg-pink-500/10' : 'bg-blue-500/10'}`} />
           </div>
 
           <div className={`relative w-full h-full max-w-[16rem] sm:max-w-[22rem] aspect-[3/4] transition-all duration-500 z-10 ${aiLevel > 10 ? 'scale-105' : 'scale-100'}`}>
             {profile.image ? (
-              <div className={`w-full h-full rounded-[2rem] sm:rounded-[3rem] p-1.5 shadow-2xl ${isDark ? 'bg-white/5' : 'bg-white'}`}>
+              <div className={`w-full h-full rounded-[2rem] sm:rounded-[3rem] p-1.5 shadow-2xl ${isPink ? 'bg-pink-50 border-pink-100' : isDark ? 'bg-white/5' : 'bg-white'}`}>
                 <img src={profile.image} alt="Partner" className="w-full h-full object-cover rounded-[1.6rem] sm:rounded-[2.6rem] shadow-inner" />
               </div>
             ) : (
-              <div className={`w-full h-full rounded-[3rem] shadow-2xl flex items-center justify-center bg-gradient-to-br transition-all ${isDark ? 'from-slate-800 to-slate-900' : 'from-blue-50 to-white'}`}>
+              <div className={`w-full h-full rounded-[3rem] shadow-2xl flex items-center justify-center bg-gradient-to-br transition-all ${isPink ? 'from-pink-50 to-rose-100' : isDark ? 'from-slate-800 to-slate-900' : 'from-blue-50 to-white'}`}>
                 <span className="text-9xl">⚡</span>
               </div>
             )}
-            <div className="absolute -top-4 -right-4 w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-4xl animate-bounce-slow border-4 border-slate-50">
+            <div className={`absolute -top-4 -right-4 w-16 h-16 rounded-2xl shadow-xl flex items-center justify-center text-4xl animate-bounce-slow border-4 ${isPink ? 'bg-pink-50 border-pink-100' : 'bg-white border-slate-50'}`}>
               {MOOD_EMOJIS[profile.mood]}
             </div>
           </div>
@@ -1225,13 +1232,13 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
       {/* AI CAPTIONS - INTEGRATED IN BACKGROUND LAYER */}
       {profile.captionsEnabled && captionText && (
         <div className="absolute bottom-40 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[80] pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-black/50 backdrop-blur-3xl border border-white/20 p-6 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] text-center ring-1 ring-white/10">
+          <div className={`backdrop-blur-3xl border p-6 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.4)] text-center ring-1 ${isPink ? 'bg-white/60 border-pink-200 ring-pink-100 text-[#912d4a]' : 'bg-black/50 border-white/20 ring-white/10 text-white'}`}>
             <div className="flex items-center justify-center gap-2 mb-3 opacity-60">
-              <div className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">Live AI Voice</span>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isPink ? 'bg-pink-600' : 'bg-pink-500'}`} />
+              <span className={`text-[9px] font-black uppercase tracking-[0.3em] ${isPink ? 'text-[#912d4a]' : 'text-white'}`}>Live AI Voice</span>
               <span className="text-xs">{(LANGUAGE_META as any)[profile.captionLanguage ?? profile.language]?.flag}</span>
             </div>
-            <p className="text-white text-lg sm:text-xl md:text-2xl font-bold leading-tight tracking-tight drop-shadow-xl italic">
+            <p className={`text-lg sm:text-xl md:text-2xl font-bold leading-tight tracking-tight drop-shadow-xl italic`}>
               "{captionText}"
             </p>
           </div>
@@ -1244,10 +1251,10 @@ Se não houver novidades, retorne arrays vazios. Limite de 3 novas frases.`;
           onClick={requestAdvice}
           className={`flex flex-col items-center gap-2 group transition-all`}
         >
-          <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all group-hover:scale-110 active:scale-95 ${isDark ? 'bg-slate-800 text-blue-400 border border-white/5' : 'bg-white text-blue-600 border border-slate-100'}`}>
+          <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center shadow-lg transition-all group-hover:scale-110 active:scale-95 ${isPink ? 'bg-pink-50 text-pink-600 border border-pink-200' : isDark ? 'bg-slate-800 text-blue-400 border border-white/5' : 'bg-white text-blue-600 border border-slate-100'}`}>
             <span className="text-xl sm:text-2xl">⚡</span>
           </div>
-          <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-widest opacity-40">Insight</span>
+          <span className={`text-[8px] sm:text-[10px] uppercase font-bold tracking-widest opacity-40 ${isPink ? 'text-pink-800' : ''}`}>Insight</span>
         </button>
 
         <button

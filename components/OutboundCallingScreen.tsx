@@ -9,9 +9,10 @@ interface OutboundCallingScreenProps {
 
 export const OutboundCallingScreen: React.FC<OutboundCallingScreenProps> = ({ profile, onCancel, status }) => {
     const isDark = profile.theme === 'dark';
+    const isPink = profile.theme === 'pink';
 
     return (
-        <div className={`fixed inset-0 z-[200] flex flex-col items-center justify-between p-12 overflow-hidden ${isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
+        <div className={`fixed inset-0 z-[200] flex flex-col items-center justify-between p-12 overflow-hidden ${isPink ? 'bg-[#fffafa] text-[#912d4a]' : isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
             {/* Blurred Background */}
             {profile.image && (
                 <div
@@ -21,7 +22,7 @@ export const OutboundCallingScreen: React.FC<OutboundCallingScreenProps> = ({ pr
             )}
 
             <div className="z-10 mt-24 flex flex-col items-center animate-pulse">
-                <div className={`w-40 h-40 rounded-[3rem] overflow-hidden border-4 shadow-2xl mb-10 ${isDark ? 'border-white/10' : 'border-white shadow-blue-500/10'}`}>
+                <div className={`w-40 h-40 rounded-[3rem] overflow-hidden border-4 shadow-2xl mb-10 ${isPink ? 'border-pink-100 shadow-pink-200/50' : isDark ? 'border-white/10' : 'border-white shadow-blue-500/10'}`}>
                     {profile.image ? (
                         <img src={profile.image} alt="Target" className="w-full h-full object-cover" />
                     ) : (
@@ -29,7 +30,7 @@ export const OutboundCallingScreen: React.FC<OutboundCallingScreenProps> = ({ pr
                     )}
                 </div>
                 <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-4">{profile.name}</h2>
-                <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3 ${isDark ? 'bg-blue-600/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3 ${isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-blue-600/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                     {status === 'pending' ? 'Chamando...' : status === 'rejected' ? 'Chamada Recusada' : status === 'no_answer' ? 'Sem Resposta' : 'Conectando...'}
                 </div>

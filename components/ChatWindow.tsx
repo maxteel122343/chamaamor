@@ -8,7 +8,7 @@ interface ChatWindowProps {
     targetProfile: UserProfile;
     isAi: boolean;
     onClose: () => void;
-    isDark: boolean;
+    theme: 'dark' | 'light' | 'pink';
     apiKey: string;
     chatApiKey?: string;
     chatModel?: string;
@@ -21,7 +21,7 @@ interface Conversation {
     lastMessageDate?: string;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfile: initialTarget, isAi: initialIsAi, onClose, isDark, apiKey, chatApiKey, chatModel }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfile: initialTarget, isAi: initialIsAi, onClose, theme, apiKey, chatApiKey, chatModel }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeTarget, setActiveTarget] = useState<UserProfile>(initialTarget);
     const [activeIsAi, setActiveIsAi] = useState(initialIsAi);
@@ -33,8 +33,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
     const [error, setError] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const cardClasses = isDark ? "bg-[#15181e] border-white/5 text-white" : "bg-white border-slate-100 text-slate-900";
-    const inputClasses = isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900";
+    const isDark = theme === 'dark';
+    const isPink = theme === 'pink';
+    const cardClasses = isPink ? "bg-white border-[#ffdada] text-[#912d4a]" : isDark ? "bg-[#15181e] border-white/5 text-white" : "bg-white border-slate-100 text-slate-900";
+    const inputClasses = isPink ? "bg-[#fffafa] border-[#ffc5ca] text-[#912d4a]" : isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900";
 
     const fetchMessages = async () => {
         setLoading(true);
@@ -291,7 +293,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                             onClick={() => { setActiveTarget(conv.profile); setActiveIsAi(conv.isAi); }}
                             className={`flex items-center gap-4 p-4 rounded-[1.5rem] cursor-pointer transition-all shrink-0 sm:shrink ${activeTarget.id === conv.profile.id
                                 ? 'bg-blue-600 text-white'
-                                : isDark ? 'hover:bg-white/5 text-white/60' : 'hover:bg-slate-50 text-slate-800'
+                                : isPink ? 'hover:bg-pink-50 text-[#912d4a]/60' : isDark ? 'hover:bg-white/5 text-white/60' : 'hover:bg-slate-50 text-slate-800'
                                 }`}
                         >
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shrink-0">
@@ -311,7 +313,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
             </div>
 
             {/* Main Area */}
-            <div className={`flex-1 flex flex-col h-full ${isDark ? 'bg-[#0f1116]' : 'bg-slate-50'}`}>
+            <div className={`flex-1 flex flex-col h-full ${isPink ? 'bg-[#fffafa]' : isDark ? 'bg-[#0f1116]' : 'bg-slate-50'}`}>
                 <div className={`p-6 border-b border-white/5 flex items-center justify-between ${cardClasses}`}>
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl overflow-hidden shadow-lg ${activeIsAi ? 'ring-2 ring-pink-500' : 'ring-2 ring-blue-500'}`}>
@@ -346,7 +348,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                         const isMe = msg.sender_id === currentUser.id;
                         return (
                             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
-                                <div className={`max-w-[75%] p-5 rounded-3xl ${isMe ? 'bg-blue-600 text-white rounded-tr-none shadow-xl shadow-blue-500/20' : (isDark ? 'bg-white/10 text-white' : 'bg-white shadow-md text-slate-800') + ' rounded-tl-none'}`}>
+                                <div className={`max-w-[75%] p-5 rounded-3xl ${isMe ? 'bg-blue-600 text-white rounded-tr-none shadow-xl shadow-blue-500/20' : (isPink ? 'bg-pink-100 text-[#912d4a]' : isDark ? 'bg-white/10 text-white' : 'bg-white shadow-md text-slate-800') + ' rounded-tl-none'}`}>
                                     <p className="text-[15px] font-medium leading-relaxed">{msg.content}</p>
                                     <div className="text-[9px] mt-2 font-black uppercase tracking-widest opacity-40">
                                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -357,7 +359,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                     })}
                     {isAiTyping && (
                         <div className="flex justify-start">
-                            <div className={`p-5 rounded-3xl rounded-tl-none ${isDark ? 'bg-white/10 text-white' : 'bg-white shadow-md'}`}>
+                            <div className={`p-5 rounded-3xl rounded-tl-none ${isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-white/10 text-white' : 'bg-white shadow-md'}`}>
                                 <div className="flex gap-1.5 py-1">
                                     <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
                                     <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

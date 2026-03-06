@@ -12,6 +12,7 @@ interface IncomingCallScreenProps {
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile, activePartner, callReason, onAccept, onDecline, onAiPickup }) => {
     const isDark = profile.theme === 'dark';
+    const isPink = profile.theme === 'pink';
 
     const displayName = activePartner.name;
     const displayImage = activePartner.image;
@@ -24,6 +25,30 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile,
     else if (callReason === 'receptionist_incoming') displayText = "Ligação de Usuário (IA atenderá em 5s)";
 
     const [timer, setTimer] = React.useState(5);
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+    React.useEffect(() => {
+        const ringtoneUrl = profile.ringtoneUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        const audio = new Audio(ringtoneUrl);
+        audio.loop = true;
+        audioRef.current = audio;
+
+        const playAudio = async () => {
+            try {
+                await audio.play();
+            } catch (err) {
+                console.warn("Autoplay blocked or audio error:", err);
+            }
+        };
+
+        playAudio();
+
+        return () => {
+            audio.pause();
+            audio.currentTime = 0;
+            audioRef.current = null;
+        };
+    }, [profile.ringtoneUrl]);
 
     React.useEffect(() => {
         if (callReason === 'receptionist_incoming' && onAiPickup) {
@@ -42,7 +67,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile,
     }, [callReason, onAiPickup]);
 
     return (
-        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-12 overflow-hidden ${isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
+        <div className={`fixed inset-0 z-50 flex flex-col items-center justify-between p-6 sm:p-12 overflow-hidden ${isPink ? 'bg-[#fffafa] text-[#912d4a]' : isDark ? 'bg-[#0b0c10] text-white' : 'bg-[#f4f7fa] text-slate-900'}`}>
             {/* Blurred Background */}
             {profile.image && (
                 <div
@@ -52,7 +77,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile,
             )}
 
             <div className="z-10 mt-20 flex flex-col items-center">
-                <div className={`w-48 h-48 rounded-[3rem] overflow-hidden border-8 shadow-2xl mb-8 transition-all hover:scale-105 active:scale-95 ${isDark ? 'border-white/5' : 'border-white shadow-blue-500/10'}`}>
+                <div className={`w-48 h-48 rounded-[3rem] overflow-hidden border-8 shadow-2xl mb-8 transition-all hover:scale-105 active:scale-95 ${isPink ? 'border-pink-100 shadow-pink-200/50' : isDark ? 'border-white/5' : 'border-white shadow-blue-500/10'}`}>
                     {displayImage ? (
                         <img src={displayImage} alt="Caller" className="w-full h-full object-cover" />
                     ) : (
@@ -60,7 +85,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile,
                     )}
                 </div>
                 <h2 className="text-4xl font-bold tracking-tight mb-2">{displayName}</h2>
-                <div className={`px-5 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-sm backdrop-blur-md ${isDark ? 'bg-white/10 text-blue-400' : 'bg-white/80 border border-slate-100 text-blue-600'}`}>
+                <div className={`px-5 py-2 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-sm backdrop-blur-md ${isPink ? 'bg-white/80 border border-pink-100 text-pink-600' : isDark ? 'bg-white/10 text-blue-400' : 'bg-white/80 border border-slate-100 text-blue-600'}`}>
                     {displayText}
                 </div>
             </div>
