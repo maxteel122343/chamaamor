@@ -223,9 +223,9 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                 {/* End Call */}
                 <button
                     onClick={() => handleEnd(true)}
-                    className="w-20 h-20 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-red-600/40 hover:scale-110 active:scale-95 transition-all"
+                    className="w-14 h-14 rounded-[1.2rem] bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-red-600/40 hover:scale-110 active:scale-95 transition-all"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 transform rotate-[135deg]" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6.62 10.79a15.15 15.15 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27c1.12.44 2.33.68 3.58.68a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.24 2.46.68 3.58a1 1 0 01-.27 1.11z" />
                     </svg>
                 </button>

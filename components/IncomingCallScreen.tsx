@@ -71,8 +71,8 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ profile,
                     className="flex-1 flex flex-col items-center gap-3 group"
                 >
                     <div className="h-20 w-full rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-sm group-hover:bg-red-500 group-hover:text-white transition-all duration-300 transform active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 transform rotate-[135deg]" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6.62 10.79a15.15 15.15 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27c1.12.44 2.33.68 3.58.68a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.24 2.46.68 3.58a1 1 0 01-.27 1.11z" />
                         </svg>
                     </div>
                     <span className="font-bold text-xs uppercase tracking-widest opacity-40">Decline</span>
