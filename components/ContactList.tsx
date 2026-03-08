@@ -19,7 +19,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
     const [showAddModal, setShowAddModal] = useState(false);
     const [newContact, setNewContact] = useState({ name: '', number: '', image: '', type: 'user' as 'user' | 'ai' });
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
-    const [activeContactView, setActiveContactView] = useState<'my_contacts' | 'online_now'>('my_contacts');
+    const [activeContactView, setActiveContactView] = useState<'my_contacts' | 'online_now'>('online_now');
 
     const cardClasses = isDark ? "bg-[#15181e] border-white/5" : "bg-white border-slate-100 shadow-sm";
     const itemClasses = isDark ? "hover:bg-white/5 border-white/5 bg-[#0b0c10]" : "hover:bg-slate-50 border-slate-100 bg-white";
@@ -50,27 +50,34 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
         if (!currentUser?.id) return;
 
         console.log("ContactList: Subscribing to online-users channel...");
-        const channel = supabase.channel('online-users', {
-            config: {
-                presence: {
-                    key: currentUser.id,
-                },
-            },
-        });
+        // Join the same channel as App.tsx to see the same presence state
+        const channel = supabase.channel('online-users');
 
         channel
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState();
-                console.log("Presence Sync State:", state);
-                const users = Object.values(state).flat();
-                setOnlineUsers(users);
+                console.log("Presence Sync State Update:", state);
+
+                // Aggregate all users from all presence keys
+                const allPresences = Object.values(state).flat() as any[];
+
+                // Map to ensure unique users by ID (in case of multiple tabs)
+                const uniqueUsersMap = new Map();
+                allPresences.forEach(p => {
+                    if (p.id && p.id !== currentUser.id) {
+                        uniqueUsersMap.set(p.id, p);
+                    }
+                });
+
+                const finalUsers = Array.from(uniqueUsersMap.values());
+                console.log("Final Online Users List:", finalUsers);
+                setOnlineUsers(finalUsers);
             })
             .subscribe((status) => {
-                console.log(`Presence channel status: ${status}`);
+                console.log(`Presence listener status: ${status}`);
             });
 
         return () => {
-            console.log("ContactList: Unsubscribing from online-users channel");
             channel.unsubscribe();
         };
     }, [currentUser?.id]);
@@ -565,7 +572,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                             className={`flex-1 py-6 px-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative flex items-center justify-center gap-2 ${activeContactView === 'online_now' ? 'opacity-100 bg-black/5 dark:bg-white/5 italic' : 'opacity-20 hover:opacity-100'}`}
                         >
                             <span className={`w-2 h-2 rounded-full bg-emerald-500 ${activeContactView === 'online_now' ? 'animate-pulse' : ''}`} />
-                            Online Agora ({onlineUsers.filter(u => u.id !== currentUser.id).length})
+                            Online Agora ({onlineUsers.length})
                             {activeContactView === 'online_now' && <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-emerald-600 rounded-full" />}
                         </button>
                     </div>
@@ -647,45 +654,43 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                             </>
                         ) : (
                             <>
-                                {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
+                                {onlineUsers.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-20 opacity-20 italic">
                                         <span className="text-4xl mb-4">🌑</span>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-center">Ninguém navegando no momento</p>
                                     </div>
                                 )}
-                                {onlineUsers
-                                    .filter(u => u.id !== currentUser.id)
-                                    .map((u, idx) => (
-                                        <div
-                                            key={`${u.id}-${idx}`}
-                                            className={`flex items-center gap-5 p-6 border-b border-inherit last:border-0 transition-all duration-300 ${itemClasses} hover:bg-emerald-500/5 group`}
-                                        >
-                                            <div className="relative w-14 h-14 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
-                                                {u.avatar_url ? (
-                                                    <img src={u.avatar_url} className="w-full h-full object-cover rounded-[1.5rem]" />
-                                                ) : '👤'}
-                                                <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#15181e] rounded-full" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="font-black text-base tracking-tight truncate italic">{u.display_name}</h4>
-                                                    {contacts.some(c => c.target_id === u.id) && (
-                                                        <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase tracking-widest border border-blue-500/10">Salvo</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mt-1">Conectado Agora</p>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSearchQuery(u.display_name);
-                                                    searchContact();
-                                                }}
-                                                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${contacts.some(c => c.target_id === u.id) ? 'bg-slate-500/10 text-slate-400 opacity-50 cursor-default' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20'}`}
-                                            >
-                                                {contacts.some(c => c.target_id === u.id) ? 'Já Conectado' : 'Conectar'}
-                                            </button>
+                                {onlineUsers.map((u, idx) => (
+                                    <div
+                                        key={`${u.id}-${idx}`}
+                                        className={`flex items-center gap-5 p-6 border-b border-inherit last:border-0 transition-all duration-300 ${itemClasses} hover:bg-emerald-500/5 group`}
+                                    >
+                                        <div className="relative w-14 h-14 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
+                                            {u.avatar_url ? (
+                                                <img src={u.avatar_url} className="w-full h-full object-cover rounded-[1.5rem]" />
+                                            ) : '👤'}
+                                            <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#15181e] rounded-full" />
                                         </div>
-                                    ))}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-black text-base tracking-tight truncate italic">{u.display_name}</h4>
+                                                {contacts.some(c => c.target_id === u.id) && (
+                                                    <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase tracking-widest border border-blue-500/10">Salvo</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mt-1">Conectado Agora</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSearchQuery(u.display_name);
+                                                searchContact();
+                                            }}
+                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${contacts.some(c => c.target_id === u.id) ? 'bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20'}`}
+                                        >
+                                            {contacts.some(c => c.target_id === u.id) ? 'Ver Perfil' : 'Conectar'}
+                                        </button>
+                                    </div>
+                                ))}
                             </>
                         )}
                     </div>
