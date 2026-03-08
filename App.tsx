@@ -169,7 +169,9 @@ function App() {
         // Presence sync handled in components that need the list
       })
       .subscribe(async (status) => {
+        console.log(`Global presence channel status: ${status}`);
         if (status === 'SUBSCRIBED') {
+          console.log(`Tracking presence for user: ${user.id} (${currentUserProfile.display_name})`);
           await channel.track({
             id: user.id,
             display_name: currentUserProfile.display_name,

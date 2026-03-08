@@ -19,7 +19,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
     const [showAddModal, setShowAddModal] = useState(false);
     const [newContact, setNewContact] = useState({ name: '', number: '', image: '', type: 'user' as 'user' | 'ai' });
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
-    const [showOnlineModal, setShowOnlineModal] = useState(false);
+    const [activeContactView, setActiveContactView] = useState<'my_contacts' | 'online_now'>('my_contacts');
 
     const cardClasses = isDark ? "bg-[#15181e] border-white/5" : "bg-white border-slate-100 shadow-sm";
     const itemClasses = isDark ? "hover:bg-white/5 border-white/5 bg-[#0b0c10]" : "hover:bg-slate-50 border-slate-100 bg-white";
@@ -49,6 +49,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
     useEffect(() => {
         if (!currentUser?.id) return;
 
+        console.log("ContactList: Subscribing to online-users channel...");
         const channel = supabase.channel('online-users', {
             config: {
                 presence: {
@@ -60,12 +61,16 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
         channel
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState();
+                console.log("Presence Sync State:", state);
                 const users = Object.values(state).flat();
                 setOnlineUsers(users);
             })
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`Presence channel status: ${status}`);
+            });
 
         return () => {
+            console.log("ContactList: Unsubscribing from online-users channel");
             channel.unsubscribe();
         };
     }, [currentUser?.id]);
@@ -443,22 +448,6 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                 </button>
             </div>
 
-            {/* Online Pulse Button (as requested in the drawing) */}
-            <div className="flex justify-start px-2">
-                <button
-                    onClick={() => setShowOnlineModal(true)}
-                    className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-all group relative overflow-hidden"
-                >
-                    <div className="absolute inset-0 bg-emerald-500/5 animate-pulse" />
-                    <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] relative z-10">Mundo Agora: {onlineUsers.length} Online</span>
-                    <span className="text-xs opacity-40 group-hover:translate-x-1 transition-transform relative z-10">→</span>
-                </button>
-            </div>
-
 
 
             {/* Combined Results Container */}
@@ -561,87 +550,144 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                     </div>
                 )}
 
-                {/* My Contacts Card */}
+                {/* Contacts / Online Tabs Card */}
                 <div className={`rounded-[2rem] md:rounded-[3rem] border overflow-hidden ${cardClasses} transition-all`}>
-                    <div className="p-5 md:p-8 border-b border-inherit bg-black/5 dark:bg-white/5 flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-widest opacity-30 italic">Agenda de Conexões</h3>
-                        {searchQuery && (
-                            <span className="text-[9px] font-black uppercase opacity-20 bg-black/5 dark:bg-white/5 px-3 py-1 rounded-full">Filtrado</span>
-                        )}
+                    <div className="flex border-b border-inherit">
+                        <button
+                            onClick={() => setActiveContactView('my_contacts')}
+                            className={`flex-1 py-6 px-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeContactView === 'my_contacts' ? 'opacity-100 bg-black/5 dark:bg-white/5 italic' : 'opacity-20 hover:opacity-100'}`}
+                        >
+                            Agenda de Conexões
+                            {activeContactView === 'my_contacts' && <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-blue-600 rounded-full" />}
+                        </button>
+                        <button
+                            onClick={() => setActiveContactView('online_now')}
+                            className={`flex-1 py-6 px-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative flex items-center justify-center gap-2 ${activeContactView === 'online_now' ? 'opacity-100 bg-black/5 dark:bg-white/5 italic' : 'opacity-20 hover:opacity-100'}`}
+                        >
+                            <span className={`w-2 h-2 rounded-full bg-emerald-500 ${activeContactView === 'online_now' ? 'animate-pulse' : ''}`} />
+                            Online Agora ({onlineUsers.filter(u => u.id !== currentUser.id).length})
+                            {activeContactView === 'online_now' && <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-emerald-600 rounded-full" />}
+                        </button>
                     </div>
 
                     <div className="max-h-[500px] overflow-y-auto no-scrollbar">
-                        {filteredContacts.length === 0 && !loading && (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-20 italic">
-                                <span className="text-4xl mb-4">🌪️</span>
-                                <p className="text-[10px] font-black uppercase tracking-widest">Nenhum contato salvo encontrado</p>
-                            </div>
-                        )}
-                        {filteredContacts.map((contact) => (
-                            <div
-                                key={contact.id}
-                                className={`flex items-center gap-5 p-6 border-b transition-all duration-300 ${itemClasses} last:border-0 hover:bg-blue-600/5 group`}
-                            >
-                                <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110 ${contact.is_ai_contact ? 'bg-pink-600/10 text-pink-600' : 'bg-blue-600/10 text-blue-600'}`}>
-                                    {contact.is_ai_contact ? (
-                                        contact.profile?.ai_settings?.image ? (
-                                            <img src={contact.profile.ai_settings.image} className="w-full h-full object-cover rounded-[1.5rem]" />
-                                        ) : '⚡'
-                                    ) : (
-                                        contact.profile?.avatar_url ? (
-                                            <img src={contact.profile.avatar_url} className="w-full h-full object-cover rounded-[1.5rem]" />
-                                        ) : '👤'
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-black text-base tracking-tight truncate italic">
-                                        {contact.is_ai_contact
-                                            ? (contact.alias === (contact.profile?.nickname || contact.profile?.display_name) || !contact.alias ? (contact.profile?.ai_settings?.name || contact.alias || contact.profile?.nickname || contact.profile?.display_name) : contact.alias)
-                                            : (contact.alias || contact.profile?.nickname || contact.profile?.display_name)
-                                        }
-                                    </h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] truncate">
-                                            {contact.is_ai_contact
-                                                ? formatDisplayNumber(contact.profile?.ai_number || '', true)
-                                                : formatDisplayNumber(contact.profile?.personal_number || '', false)}
-                                        </p>
-                                        <button
-                                            onClick={() => copyToClipboard(contact.is_ai_contact ? contact.profile?.ai_number || '' : contact.profile?.personal_number || '')}
-                                            className="opacity-0 group-hover:opacity-30 hover:!opacity-100 transition-opacity"
-                                        >
-                                            📋
-                                        </button>
+                        {activeContactView === 'my_contacts' ? (
+                            <>
+                                {filteredContacts.length === 0 && !loading && (
+                                    <div className="flex flex-col items-center justify-center py-20 opacity-20 italic">
+                                        <span className="text-4xl mb-4">🌪️</span>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Nenhum contato salvo encontrado</p>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => { if (contact.profile) onOpenChat(contact.profile, contact.is_ai_contact); }}
-                                        className="w-10 h-10 bg-pink-600/10 text-pink-500 rounded-xl hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
-                                        title="Chat"
+                                )}
+                                {filteredContacts.map((contact) => (
+                                    <div
+                                        key={contact.id}
+                                        className={`flex items-center gap-5 p-6 border-b transition-all duration-300 ${itemClasses} last:border-0 hover:bg-blue-600/5 group`}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        onClick={() => toggleBlockUser(contact.profile?.id || '', false)}
-                                        className="w-10 h-10 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
-                                        title="Bloquear usuário"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                                    </button>
-                                    <button
-                                        onClick={() => handleCallDirect(contact.profile as any, contact.is_ai_contact)}
-                                        className="w-12 h-12 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                        <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-sm transition-transform group-hover:scale-110 ${contact.is_ai_contact ? 'bg-pink-600/10 text-pink-600' : 'bg-blue-600/10 text-blue-600'}`}>
+                                            {contact.is_ai_contact ? (
+                                                contact.profile?.ai_settings?.image ? (
+                                                    <img src={contact.profile.ai_settings.image} className="w-full h-full object-cover rounded-[1.5rem]" />
+                                                ) : '⚡'
+                                            ) : (
+                                                contact.profile?.avatar_url ? (
+                                                    <img src={contact.profile.avatar_url} className="w-full h-full object-cover rounded-[1.5rem]" />
+                                                ) : '👤'
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-black text-base tracking-tight truncate italic">
+                                                {contact.is_ai_contact
+                                                    ? (contact.alias === (contact.profile?.nickname || contact.profile?.display_name) || !contact.alias ? (contact.profile?.ai_settings?.name || contact.alias || contact.profile?.nickname || contact.profile?.display_name) : contact.alias)
+                                                    : (contact.alias || contact.profile?.nickname || contact.profile?.display_name)
+                                                }
+                                            </h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] truncate">
+                                                    {contact.is_ai_contact
+                                                        ? formatDisplayNumber(contact.profile?.ai_number || '', true)
+                                                        : formatDisplayNumber(contact.profile?.personal_number || '', false)}
+                                                </p>
+                                                <button
+                                                    onClick={() => copyToClipboard(contact.is_ai_contact ? contact.profile?.ai_number || '' : contact.profile?.personal_number || '')}
+                                                    className="opacity-0 group-hover:opacity-30 hover:!opacity-100 transition-opacity"
+                                                >
+                                                    📋
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => { if (contact.profile) onOpenChat(contact.profile, contact.is_ai_contact); }}
+                                                className="w-10 h-10 bg-pink-600/10 text-pink-500 rounded-xl hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                                title="Chat"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => toggleBlockUser(contact.profile?.id || '', false)}
+                                                className="w-10 h-10 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                                title="Bloquear usuário"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleCallDirect(contact.profile as any, contact.is_ai_contact)}
+                                                className="w-12 h-12 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-20 opacity-20 italic">
+                                        <span className="text-4xl mb-4">🌑</span>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-center">Ninguém navegando no momento</p>
+                                    </div>
+                                )}
+                                {onlineUsers
+                                    .filter(u => u.id !== currentUser.id)
+                                    .map((u, idx) => (
+                                        <div
+                                            key={`${u.id}-${idx}`}
+                                            className={`flex items-center gap-5 p-6 border-b border-inherit last:border-0 transition-all duration-300 ${itemClasses} hover:bg-emerald-500/5 group`}
+                                        >
+                                            <div className="relative w-14 h-14 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
+                                                {u.avatar_url ? (
+                                                    <img src={u.avatar_url} className="w-full h-full object-cover rounded-[1.5rem]" />
+                                                ) : '👤'}
+                                                <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#15181e] rounded-full" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-black text-base tracking-tight truncate italic">{u.display_name}</h4>
+                                                    {contacts.some(c => c.target_id === u.id) && (
+                                                        <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase tracking-widest border border-blue-500/10">Salvo</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mt-1">Conectado Agora</p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSearchQuery(u.display_name);
+                                                    searchContact();
+                                                }}
+                                                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${contacts.some(c => c.target_id === u.id) ? 'bg-slate-500/10 text-slate-400 opacity-50 cursor-default' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20'}`}
+                                            >
+                                                {contacts.some(c => c.target_id === u.id) ? 'Já Conectado' : 'Conectar'}
+                                            </button>
+                                        </div>
+                                    ))}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -761,73 +807,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                     </div>
                 )
             }
-            {/* Online Users Modal */}
-            {
-                showOnlineModal && (
-                    <div className="fixed inset-0 z-[210] flex items-center justify-center p-6 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300">
-                        <div className={`w-full max-w-md p-8 rounded-[3rem] border shadow-[0_48px_80px_-20px_rgba(0,0,0,0.6)] animate-in slide-in-from-bottom-8 duration-500 ${cardClasses}`}>
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-3">
-                                    <span className="relative flex h-3 w-3">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                                    </span>
-                                    <div>
-                                        <h3 className="text-xl font-black italic tracking-tighter uppercase text-emerald-500">Mundo Agora</h3>
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-30 mt-1">Navegando em Tempo Real</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setShowOnlineModal(false)} className="w-8 h-8 flex items-center justify-center opacity-30 hover:opacity-100 bg-black/5 dark:bg-white/5 rounded-full transition-all text-sm">✕</button>
-                            </div>
 
-                            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-3 no-scrollbar">
-                                {onlineUsers.filter(u => u.id !== currentUser.id).length === 0 && (
-                                    <p className="text-center py-10 text-[10px] uppercase font-black tracking-widest opacity-20 italic">A órbita está vazia no momento...</p>
-                                )}
-                                {onlineUsers
-                                    .filter(u => u.id !== currentUser.id)
-                                    .map((u, idx) => (
-                                        <div
-                                            key={`${u.id}-${idx}`}
-                                            className={`flex items-center gap-4 p-4 rounded-3xl border border-inherit transition-all duration-300 ${itemClasses} hover:bg-emerald-500/5 group`}
-                                        >
-                                            <div className="relative w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-xl transition-transform group-hover:scale-105">
-                                                {u.avatar_url ? (
-                                                    <img src={u.avatar_url} className="w-full h-full object-cover rounded-2xl" />
-                                                ) : '👤'}
-                                                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-[#15181e] rounded-full" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="font-black text-xs tracking-tight truncate italic">{u.display_name}</h4>
-                                                    {contacts.some(c => c.target_id === u.id) && (
-                                                        <span className="text-[6px] font-black px-1 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase tracking-widest border border-blue-500/10">Salvo</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[8px] font-black opacity-30 uppercase tracking-[0.2em] mt-0.5">Disponível</p>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setShowOnlineModal(false);
-                                                    setSearchQuery(u.display_name);
-                                                    searchContact();
-                                                }}
-                                                className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${contacts.some(c => c.target_id === u.id) ? 'bg-slate-500/10 text-slate-400 opacity-50 cursor-default' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
-                                            >
-                                                {contacts.some(c => c.target_id === u.id) ? 'Já Conectado' : 'Conectar'}
-                                            </button>
-                                        </div>
-                                    ))}
-                            </div>
-                            <div className="mt-8 pt-6 border-t border-inherit text-center px-4">
-                                <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-20 leading-relaxed italic">
-                                    Você aparece aqui para outros se a sua "Frequência Digital" estiver visível nos ajustes.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
         </div >
     );
 };
