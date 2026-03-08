@@ -49,7 +49,13 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
     useEffect(() => {
         if (!currentUser?.id) return;
 
-        const channel = supabase.channel('online-users');
+        const channel = supabase.channel('online-users', {
+            config: {
+                presence: {
+                    key: currentUser.id,
+                },
+            },
+        });
 
         channel
             .on('presence', { event: 'sync' }, () => {
