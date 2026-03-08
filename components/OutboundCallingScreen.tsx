@@ -4,7 +4,7 @@ import { PartnerProfile } from '../types';
 interface OutboundCallingScreenProps {
     profile: PartnerProfile;
     onCancel: () => void;
-    status: 'pending' | 'rejected' | 'accepted' | 'no_answer' | 'error';
+    status: 'pending' | 'rejected' | 'accepted' | 'no_answer';
 }
 
 export const OutboundCallingScreen: React.FC<OutboundCallingScreenProps> = ({ profile, onCancel, status }) => {
@@ -30,9 +30,9 @@ export const OutboundCallingScreen: React.FC<OutboundCallingScreenProps> = ({ pr
                     )}
                 </div>
                 <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-4">{profile.name}</h2>
-                <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3 ${status === 'error' ? 'bg-red-50 text-red-600' : isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-blue-600/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                    <span className={`w-2 h-2 rounded-full ${status === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-ping'}`} />
-                    {status === 'pending' ? 'Chamando...' : status === 'rejected' ? 'Chamada Recusada' : status === 'no_answer' ? 'Sem Resposta' : status === 'error' ? 'Erro de Conexão. Tentar Novamente' : 'Conectando...'}
+                <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.3em] flex items-center gap-3 ${isPink ? 'bg-pink-100 text-pink-600' : isDark ? 'bg-blue-600/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                    {status === 'pending' ? 'Chamando...' : status === 'rejected' ? 'Chamada Recusada' : status === 'no_answer' ? 'Sem Resposta' : 'Conectando...'}
                 </div>
             </div>
 
