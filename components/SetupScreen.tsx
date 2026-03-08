@@ -526,12 +526,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                         <button
                             key={tab.id}
                             onClick={() => {
-                                if (activeTab === tab.id) {
-                                    setIsSidebarExpanded(!isSidebarExpanded);
-                                } else {
-                                    setActiveTab(tab.id as any);
-                                    setIsSidebarExpanded(true);
-                                }
+                                setActiveTab(tab.id as any);
+                                setIsSidebarExpanded(false);
                             }}
                             className={`w-full group relative flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 ${activeTab === tab.id
                                 ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
