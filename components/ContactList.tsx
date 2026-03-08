@@ -18,6 +18,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
     const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newContact, setNewContact] = useState({ name: '', number: '', image: '', type: 'user' as 'user' | 'ai' });
+    const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
 
     const cardClasses = isDark ? "bg-[#15181e] border-white/5" : "bg-white border-slate-100 shadow-sm";
     const itemClasses = isDark ? "hover:bg-white/5 border-white/5 bg-[#0b0c10]" : "hover:bg-slate-50 border-slate-100 bg-white";
@@ -42,6 +43,25 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Track Presence
+    useEffect(() => {
+        if (!currentUser?.id) return;
+
+        const channel = supabase.channel('online-users');
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const users = Object.values(state).flat();
+                setOnlineUsers(users);
+            })
+            .subscribe();
+
+        return () => {
+            channel.unsubscribe();
+        };
+    }, [currentUser?.id]);
 
     const fetchMyProfile = async () => {
         const { data, error } = await supabase
@@ -415,6 +435,45 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                     <span className="group-hover:rotate-90 transition-transform duration-500">+</span>
                 </button>
             </div>
+
+            {/* Online Users Horizontal Scroll */}
+            {onlineUsers.filter(u => u.id !== currentUser.id && !contacts.some(c => c.target_id === u.id)).length > 0 && (
+                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-left-6 duration-700">
+                    <div className="flex items-center gap-2 ml-4">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Online Agora</p>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-2">
+                        {onlineUsers
+                            .filter(u => u.id !== currentUser.id && !contacts.some(c => c.target_id === u.id))
+                            .map((u, idx) => (
+                                <div
+                                    key={`${u.id}-${idx}`}
+                                    className={`flex-shrink-0 w-24 flex flex-col items-center gap-3 p-4 rounded-[2rem] border group transition-all hover:scale-105 active:scale-95 ${cardClasses} hover:border-emerald-500/30 cursor-pointer`}
+                                    onClick={() => {
+                                        // Auto search for this user to allow adding
+                                        setSearchQuery(u.display_name);
+                                        searchContact();
+                                    }}
+                                >
+                                    <div className="relative">
+                                        <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-teal-500/5">
+                                            {u.avatar_url ? (
+                                                <img src={u.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xl opacity-20">👤</div>
+                                            )}
+                                        </div>
+                                        <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white dark:border-[#15181e] rounded-full" />
+                                    </div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-center truncate w-full opacity-60 group-hover:opacity-100 italic">
+                                        {u.display_name?.split(' ')[0]}
+                                    </p>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
 
             {/* Combined Results Container */}
             <div className="flex flex-col gap-10">

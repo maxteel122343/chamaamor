@@ -153,6 +153,37 @@ function App() {
     return () => clearTimeout(timeout);
   }, [profile, user]);
 
+  useEffect(() => {
+    if (!user || !currentUserProfile) return;
+
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: user.id,
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        // Presence sync handled in components that need the list
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: user.id,
+            display_name: currentUserProfile.display_name,
+            avatar_url: currentUserProfile.avatar_url,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user, currentUserProfile]);
+
   const isCallAllowedToday = () => {
     const today = new Date().toISOString().split('T')[0];
     if (profile.lastRefusalDate === today && (profile.dailyRefusalCount || 0) >= 3) {
