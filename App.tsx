@@ -342,11 +342,37 @@ function App() {
   const evaluateAiDecision = async (call: any) => {
     const currentProfile = profileRef.current;
     const p = currentProfile.personality.toLowerCase();
+    const score = currentProfile.relationshipScore;
+
+    // 1. Explicit Overrides
     if (p.includes("sempre rejeitar")) return false;
     if (p.includes("sempre atender")) return true;
-    if (p.includes("fria")) return Math.random() > 0.6;
-    if (currentProfile.relationshipScore < 20) return Math.random() > 0.5;
-    return true;
+
+    // 2. Personality Factors
+    let rejectionChance = 0.1; // 10% baseline "busy/sleeping" chance
+
+    if (p.includes("difícil") || p.includes("fria") || p.includes("indiferente")) rejectionChance += 0.3;
+    if (p.includes("tímida") || p.includes("reservada")) rejectionChance += 0.2;
+    if (p.includes("brava") || p.includes("irritada")) rejectionChance += 0.4;
+
+    if (p.includes("carente") || p.includes("amorosa") || p.includes("fácil")) rejectionChance -= 0.15;
+    if (p.includes("sociável") || p.includes("animada")) rejectionChance -= 0.1;
+
+    // 3. Relationship Score Impact
+    // If score is 100, no extra rejection. If score is 0, add 80% rejection.
+    const scoreImpact = Math.max(0, (100 - score) / 100) * 0.8;
+    rejectionChance += scoreImpact;
+
+    // 4. Time-based "Moody" randomness (simulated)
+    const hour = new Date().getHours();
+    if (hour >= 1 && hour <= 6) rejectionChance += 0.5; // Very hard to reach in the middle of the night
+
+    const finalChance = Math.min(0.95, Math.max(0.05, rejectionChance));
+    const random = Math.random();
+
+    console.log(`AI Decision Logic: Score=${score}, BaseChance=${rejectionChance.toFixed(2)}, Roll=${random.toFixed(2)}`);
+
+    return random > finalChance;
   };
 
   useEffect(() => {
