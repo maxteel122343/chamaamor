@@ -515,10 +515,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                 {/* Navigation Links */}
                 <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto no-scrollbar">
                     {[
+                        { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'chats', label: 'Chats', icon: '💬' },
                         { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
-                        { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'calendar', label: 'Agenda', icon: '📅' },
                         { id: 'memory', label: 'Memória', icon: '🧠' },
                         { id: 'config', label: 'Ajustes', icon: '⚙️' }
