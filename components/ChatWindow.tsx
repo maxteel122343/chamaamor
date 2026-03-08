@@ -12,6 +12,7 @@ interface ChatWindowProps {
     apiKey: string;
     chatApiKey?: string;
     chatModel?: string;
+    ephemeralHumanChats?: boolean;
 }
 
 interface Conversation {
@@ -21,7 +22,7 @@ interface Conversation {
     lastMessageDate?: string;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfile: initialTarget, isAi: initialIsAi, onClose, theme, apiKey, chatApiKey, chatModel }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfile: initialTarget, isAi: initialIsAi, onClose, theme, apiKey, chatApiKey, chatModel, ephemeralHumanChats }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeTarget, setActiveTarget] = useState<UserProfile>(initialTarget);
     const [activeIsAi, setActiveIsAi] = useState(initialIsAi);
@@ -46,8 +47,36 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
             .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${activeTarget.id}),and(sender_id.eq.${activeTarget.id},receiver_id.eq.${currentUser.id})`)
             .order('created_at', { ascending: true });
 
-        if (data) setMessages(data);
+        if (data) {
+            setMessages(data);
+            // After fetching, if we have unread messages directed to us, mark them as read
+            const unreadToMe = data.some(m => m.receiver_id === currentUser.id && !m.is_read);
+            if (unreadToMe) {
+                markAsRead();
+            }
+        }
         setLoading(false);
+    };
+
+    const markAsRead = async () => {
+        if (!currentUser?.id || !activeTarget?.id) return;
+        console.log(`Marcando mensagens de ${activeTarget.display_name} como lidas...`);
+        await supabase
+            .from('chat_messages')
+            .update({ is_read: true })
+            .eq('receiver_id', currentUser.id)
+            .eq('sender_id', activeTarget.id)
+            .eq('is_read', false);
+    };
+
+    const cleanupEphemeral = async (targetId: string, isAi: boolean) => {
+        if (!ephemeralHumanChats || isAi) return;
+        console.log(`Limpando chat efêmero com ${targetId}...`);
+        await supabase
+            .from('chat_messages')
+            .delete()
+            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id})`)
+            .eq('is_read', true);
     };
 
     const fetchConversations = async () => {
@@ -99,8 +128,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
 
         fetchMessages();
 
-        // Create a unique channel for this specific conversation to avoid noise
-        // while still using filters for security/accuracy
         const channel = supabase.channel(`chat_sync_${currentUser.id}_${activeTarget.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
@@ -109,12 +136,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 filter: `receiver_id=eq.${currentUser.id}`
             }, (payload) => {
                 const newMsg = payload.new as ChatMessage;
-                // Only add if it's from the person we're talking to
                 if (newMsg.sender_id === activeTarget.id) {
                     setMessages(prev => {
                         if (prev.find(m => m.id === newMsg.id)) return prev;
                         return [...prev, newMsg];
                     });
+                    // Mark as read immediately when receiving while active
+                    markAsRead();
                 }
             })
             .on('postgres_changes', {
@@ -124,7 +152,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 filter: `sender_id=eq.${currentUser.id}`
             }, (payload) => {
                 const newMsg = payload.new as ChatMessage;
-                // Sync messages sent from other tabs to the same person
                 if (newMsg.receiver_id === activeTarget.id) {
                     setMessages(prev => {
                         if (prev.find(m => m.id === newMsg.id)) return prev;
@@ -132,12 +159,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                     });
                 }
             })
-            .subscribe((status) => {
-                console.log(`Chat sync status for ${activeTarget.display_name}:`, status);
-            });
+            .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
+            // When leaving this target, cleanup if ephemeral
+            cleanupEphemeral(activeTarget.id, activeIsAi);
         };
     }, [activeTarget.id, currentUser?.id]);
 

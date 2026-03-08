@@ -134,6 +134,7 @@ export interface PartnerProfile {
   callCount?: number;
   ringtoneUrl?: string;
   ringtoneName?: string;
+  ephemeralHumanChats?: boolean;
 }
 
 export const DEFAULT_RINGTONES = [

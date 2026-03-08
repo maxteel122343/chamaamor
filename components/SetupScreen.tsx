@@ -515,9 +515,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                 {/* Navigation Links */}
                 <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto no-scrollbar">
                     {[
+                        { id: 'chats', label: 'Chats', icon: '💬' },
                         { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
-                        { id: 'chats', label: 'Chats', icon: '💬' },
                         { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'calendar', label: 'Agenda', icon: '📅' },
                         { id: 'memory', label: 'Memória', icon: '🧠' },
@@ -1500,6 +1500,32 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                             </div>
                                         </div>
 
+                                        {/* Section: Ephemeral Chats / Chat Efêmero */}
+                                        <div className={`p-10 rounded-[3rem] border ${cardClasses} relative overflow-hidden`}>
+                                            <div className={`absolute top-0 right-0 w-32 h-32 ${profile.ephemeralHumanChats !== false ? 'bg-amber-500/10' : 'bg-slate-500/10'} blur-3xl rounded-full transition-all duration-700`} />
+                                            <div className="flex justify-between items-start mb-6 relative z-10">
+                                                <div>
+                                                    <h3 className="text-sm font-bold uppercase tracking-widest text-amber-600">Chat Efêmero (Humano-Humano)</h3>
+                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 mt-2 italic">Mensagens somem após visualizadas</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateProfileAndSync(prev => ({ ...prev, ephemeralHumanChats: prev.ephemeralHumanChats === false ? true : false }))}
+                                                    className={`w-16 h-8 rounded-full relative transition-all duration-500 shadow-inner ${profile.ephemeralHumanChats !== false ? 'bg-amber-500' : 'bg-amber-300 dark:bg-white/10'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-xl transition-all duration-500 ${profile.ephemeralHumanChats !== false ? 'left-9 rotate-0' : 'left-1 -rotate-180'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-6 relative z-10">
+                                                <div className={`p-8 rounded-[2.5rem] border ${inputClasses} border-opacity-30`}>
+                                                    <p className="text-[11px] font-medium leading-relaxed opacity-80 italic">
+                                                        {profile.ephemeralHumanChats !== false
+                                                            ? "Ativado por Padrão: Quando você conversa com outros humanos, as mensagens ficam visíveis apenas até serem lidas. Ao sair do chat, as mensagens lidas são apagadas permanentemente."
+                                                            : "Desativado: O histórico de conversas entre humanos será preservado normalmente."}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Section: Privacy / Identidade Digital */}
                                         <div className={`p-10 rounded-[3rem] border ${cardClasses} relative overflow-hidden`}>
                                             <div className={`absolute top-0 right-0 w-32 h-32 ${currentUserProfile?.is_searchable !== false ? 'bg-blue-500/10' : 'bg-red-500/10'} blur-3xl rounded-full transition-all duration-700`} />
@@ -1737,6 +1763,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                         apiKey={apiKey}
                         chatApiKey={profile.chat_gemini_api_key}
                         chatModel={profile.chat_model}
+                        ephemeralHumanChats={profile.ephemeralHumanChats !== false}
                     />
                 )
             }
