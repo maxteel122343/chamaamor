@@ -333,6 +333,14 @@ function App() {
     setActivePartner(partnerProfile);
     setAppState('OUTBOUND_CALLING');
     setCallStatus('pending');
+
+    // Timeout for connection error
+    setTimeout(() => {
+      setCallStatus(prev => {
+        if (prev === 'pending') return 'error';
+        return prev;
+      });
+    }, 15000);
   };
 
   const startCall = async () => {
@@ -355,7 +363,15 @@ function App() {
         setActiveCallId(data.id);
         setActivePartner(profile); // Talk to my own AI
         setAppState('OUTBOUND_CALLING');
-        // The Realtime listener will handle the transition to CALLING if the AI "accepts"
+        setCallStatus('pending');
+
+        // Timeout for connection error
+        setTimeout(() => {
+          setCallStatus(prev => {
+            if (prev === 'pending') return 'error';
+            return prev;
+          });
+        }, 15000);
       }
     } else {
       setCallReason('initial');
@@ -610,20 +626,10 @@ function App() {
     // 3. Status/Relationship Score
     if (currentProfile.relationshipScore < 20) return Math.random() > 0.5;
 
-    // 4. Outbound call logic (Adaptive: AI is harder to reach if the user is a refuser)
+    // 4. Outbound call logic (AI always answers user's self-calls)
     if (user && call.target_id === user.id && call.caller_id === user.id) {
-      // user calling own AI
-      let chanceOfDeclining = 0.25; // 25% baseline
-
-      // If user refused 2 or more times today, AI becomes "harder" (50% chance of declining)
-      if ((currentProfile.dailyRefusalCount || 0) >= 2) {
-        chanceOfDeclining = 0.50;
-      }
-
-      if (Math.random() < chanceOfDeclining) {
-        console.log("AI decidiu não atender para fazer o usuário sentir falta.");
-        return false;
-      }
+      console.log("AI atendendo automaticamente chamada do próprio usuário.");
+      return true;
     }
 
     return true; // Pick up by default
