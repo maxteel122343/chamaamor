@@ -81,16 +81,32 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
             channelRef.current = sigChannel;
 
             sigChannel
+                .on('broadcast', { event: 'ready' }, async () => {
+                    // Receiver is ready, if I'm the caller, send offer again
+                    if (isCaller && pcRef.current) {
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        sigChannel.send({ type: 'broadcast', event: 'offer', payload: { sdp: offer } });
+                    }
+                })
                 .on('broadcast', { event: 'offer' }, async ({ payload }) => {
                     if (destroyed || isCaller) return;
-                    await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    sigChannel.send({ type: 'broadcast', event: 'answer', payload: { sdp: answer } });
+                    try {
+                        await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        sigChannel.send({ type: 'broadcast', event: 'answer', payload: { sdp: answer } });
+                    } catch (e) {
+                        console.error("Error creating answer:", e);
+                    }
                 })
                 .on('broadcast', { event: 'answer' }, async ({ payload }) => {
                     if (destroyed || !isCaller) return;
-                    await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                    try {
+                        await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                    } catch (e) {
+                        console.error("Error setRemoteDescription answer:", e);
+                    }
                 })
                 .on('broadcast', { event: 'ice' }, async ({ payload }) => {
                     if (destroyed) return;
@@ -102,6 +118,11 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                 .subscribe(async (status) => {
                     if (status !== 'SUBSCRIBED') return;
 
+                    // Receiver signals they are ready to receive offer
+                    if (!isCaller) {
+                        sigChannel.send({ type: 'broadcast', event: 'ready', payload: {} });
+                    }
+
                     // ICE candidate exchange
                     pc.onicecandidate = (e) => {
                         if (e.candidate) {
@@ -109,7 +130,7 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                         }
                     };
 
-                    // Caller creates the offer
+                    // Initial offer from caller
                     if (isCaller) {
                         const offer = await pc.createOffer();
                         await pc.setLocalDescription(offer);
@@ -118,7 +139,8 @@ export const HumanCallScreen: React.FC<HumanCallScreenProps> = ({
                 });
 
             pc.onconnectionstatechange = () => {
-                if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+                // 'disconnected' can be transient on mobile, so we only auto-end on 'failed' or 'closed'
+                if (['failed', 'closed'].includes(pc.connectionState)) {
                     if (!destroyed) handleEnd(false);
                 }
             };
