@@ -206,6 +206,10 @@ export interface LocationInvite {
     enabled: boolean;
     interval: 'week' | 'day' | 'hour' | 'same_day';
   };
+  prepare_minutes_before?: number;
+  proactive_warning_enabled?: boolean;
+  lat?: number;
+  lng?: number;
 }
 
 export interface Reminder {

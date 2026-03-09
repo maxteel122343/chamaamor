@@ -185,7 +185,11 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             trigger_at: new Date(scheduleData.time).toISOString(),
             transport_mode: transportMode,
             estimated_time: estimatedTime,
-            ai_reminder_call: scheduleData.ai_reminder_call
+            ai_reminder_call: scheduleData.ai_reminder_call,
+            prepare_minutes_before: scheduleData.prepare_minutes_before,
+            proactive_warning_enabled: scheduleData.proactive_warning_enabled,
+            lat: location?.lat,
+            lng: location?.lng
         });
 
         if (!error) {

@@ -85,6 +85,7 @@ export const InvitesTab: React.FC<InvitesTabProps> = ({ user, profile, isDark, c
         const { error } = await supabase.from('invites').update({ status }).eq('id', invite.id);
 
         if (!error && status === 'accepted') {
+            // 1. Create reminder for Receiver (User who accepted)
             await supabase.from('reminders').insert({
                 owner_id: user.id,
                 title: `📅 Encontro: ${invite.title} (@ ${invite.address})`,
@@ -94,9 +95,26 @@ export const InvitesTab: React.FC<InvitesTabProps> = ({ user, profile, isDark, c
                     address: invite.address,
                     transport_mode: invite.transport_mode,
                     estimated_time: invite.estimated_time,
-                    prepare_minutes_before: 30
+                    prepare_minutes_before: invite.prepare_minutes_before || 30
                 },
-                invite_id: invite.id
+                invite_id: invite.id,
+                ai_reminder_call: invite.ai_reminder_call
+            });
+
+            // 2. Create reminder for Sender (The one who invited)
+            await supabase.from('reminders').insert({
+                owner_id: invite.sender_id,
+                title: `🤝 Encontro Aceito: ${invite.title} (@ ${invite.address})`,
+                trigger_at: invite.trigger_at,
+                description: `Convite aceito por ${currentUserProfile?.display_name || user.email}. ${invite.description || ''}`,
+                location_data: {
+                    address: invite.address,
+                    transport_mode: invite.transport_mode,
+                    estimated_time: invite.estimated_time,
+                    prepare_minutes_before: invite.prepare_minutes_before || 30
+                },
+                invite_id: invite.id,
+                ai_reminder_call: invite.ai_reminder_call
             });
 
             const newLog: CallLog = {
@@ -109,7 +127,7 @@ export const InvitesTab: React.FC<InvitesTabProps> = ({ user, profile, isDark, c
             
             const updatedProfile = { ...profile, history: [...profile.history, newLog] };
             await supabase.from('profiles').update({ ai_settings: updatedProfile }).eq('id', user.id);
-            alert("Convite aceito! Compromisso adicionado à sua agenda.");
+            alert("Convite aceito! Compromisso adicionado à agenda de ambos.");
         }
 
         if (!error && status === 'canceled') {
