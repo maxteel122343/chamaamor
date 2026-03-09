@@ -193,7 +193,8 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             setShowInviteModal(false);
             alert("Convite enviado com sucesso!");
         } else {
-            alert("Erro ao enviar convite.");
+            console.error("Erro Supabase ao enviar convite:", error);
+            alert(`Erro ao enviar convite: ${error.message}`);
         }
         setLoading(false);
     };
