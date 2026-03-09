@@ -496,14 +496,14 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                             <div className="flex items-center gap-1 mr-1">
                                                 <button
                                                     onClick={() => toggleBlockUser(contact.profile?.id || '', false)}
-                                                    className="w-7 h-7 bg-red-600/5 text-red-500/40 hover:text-red-500 hover:bg-red-600/10 rounded-lg transition-all flex items-center justify-center group/btn"
+                                                    className="w-7 h-7 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-all flex items-center justify-center group/btn"
                                                     title="Bloquear usuário"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
                                                 </button>
                                                 <button
                                                     onClick={() => removeContact(contact.id)}
-                                                    className="w-7 h-7 bg-slate-600/5 text-slate-500/40 hover:text-slate-600 hover:bg-slate-600/10 rounded-lg transition-all flex items-center justify-center group/btn"
+                                                    className="w-7 h-7 bg-slate-600/10 text-slate-500 hover:bg-slate-600 hover:text-white rounded-lg transition-all flex items-center justify-center group/btn"
                                                     title="Remover da Agenda"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -515,7 +515,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
 
                                             <button
                                                 onClick={() => { if (contact.profile) onOpenChat(contact.profile, contact.is_ai_contact); }}
-                                                className="w-9 h-9 md:w-10 md:h-10 bg-pink-600/10 text-pink-500 rounded-xl hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center"
+                                                className="w-9 h-9 md:w-10 md:h-10 bg-pink-600 text-white rounded-xl shadow-lg shadow-pink-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
                                                 title="Chat"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -568,7 +568,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                 <div className="flex items-center gap-1 mr-1">
                                                     <button
                                                         onClick={() => toggleBlockUser(u.id, false)}
-                                                        className="w-7 h-7 bg-red-600/5 text-red-500/40 hover:text-red-500 hover:bg-red-600/10 rounded-lg transition-all flex items-center justify-center group/btn"
+                                                        className="w-7 h-7 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-all flex items-center justify-center group/btn"
                                                         title="Bloquear usuário"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
@@ -578,7 +578,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                             const contact = contacts.find(c => c.target_id === u.id);
                                                             if (contact) removeContact(contact.id);
                                                         }}
-                                                        className="w-7 h-7 bg-slate-600/5 text-slate-500/40 hover:text-slate-600 hover:bg-slate-600/10 rounded-lg transition-all flex items-center justify-center group/btn"
+                                                        className="w-7 h-7 bg-slate-600/10 text-slate-500 hover:bg-slate-600 hover:text-white rounded-lg transition-all flex items-center justify-center group/btn"
                                                         title="Remover da Agenda"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -593,7 +593,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                         const contact = contacts.find(c => c.target_id === u.id);
                                                         if (contact?.profile) onOpenChat(contact.profile, contact.is_ai_contact);
                                                     }}
-                                                    className="w-9 h-9 md:w-10 md:h-10 bg-pink-600/10 text-pink-500 rounded-xl hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center"
+                                                    className="w-9 h-9 md:w-10 md:h-10 bg-pink-600 text-white rounded-xl shadow-lg shadow-pink-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
                                                     title="Chat"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -617,7 +617,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                             <div className="flex items-center gap-1 md:gap-3">
                                                 <button
                                                     onClick={() => toggleBlockUser(u.id, false)}
-                                                    className="w-7 h-7 bg-red-600/5 text-red-500/40 hover:text-red-500 hover:bg-red-600/10 rounded-lg transition-all flex items-center justify-center group/btn mr-1"
+                                                    className="w-7 h-7 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-all flex items-center justify-center group/btn mr-1"
                                                     title="Bloquear usuário"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
