@@ -7,6 +7,7 @@ import { MemoryHistorySection } from './MemoryHistorySection';
 import { QuickChatTab } from './QuickChatTab';
 import { supabase } from '../supabaseClient';
 import { ChatWindow } from './ChatWindow';
+import { MapTab } from './MapTab';
 
 interface SetupScreenProps {
     profile: PartnerProfile;
@@ -24,12 +25,12 @@ interface SetupScreenProps {
 }
 
 export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, onStartCall, onCallPartner, nextScheduledCall, apiKey, setApiKey, user, currentUserProfile, onUpdateUserProfile, showAuth, setShowAuth }) => {
-    const [activeTab, setActiveTabState] = useState<'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats'>(() => {
+    const [activeTab, setActiveTabState] = useState<'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map'>(() => {
         const saved = sessionStorage.getItem('warm_activeTab');
         return (saved as any) || 'dashboard';
     });
 
-    const setActiveTab = (tab: 'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats') => {
+    const setActiveTab = (tab: 'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map') => {
         sessionStorage.setItem('warm_activeTab', tab);
         setActiveTabState(tab);
     };
@@ -549,6 +550,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                         { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'chats', label: 'Chats', icon: '💬', badge: unreadMessagesCount },
                         { id: 'dashboard', label: 'Início', icon: '🏠' },
+                        { id: 'map', label: 'Mapa', icon: '📍' },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
                         { id: 'calendar', label: 'Agenda', icon: '📅' },
                         { id: 'memory', label: 'Memória', icon: '🧠' },
@@ -862,6 +864,12 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
 
                         {activeTab === 'memory' && user && (
                             <div className="w-full"><MemoryHistorySection user={user} profile={profile} currentUserProfile={currentUserProfile} isDark={isDark} /></div>
+                        )}
+
+                        {activeTab === 'map' && user && (
+                            <div className="w-full max-w-5xl mx-auto">
+                                <MapTab user={user} profile={profile} setProfile={setProfile} currentUserProfile={currentUserProfile} isDark={isDark} />
+                            </div>
                         )}
 
                         {activeTab === 'contacts' && user && (
