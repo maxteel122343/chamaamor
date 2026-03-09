@@ -31,6 +31,8 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
         title: '',
         description: '',
         time: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+        prepare_minutes_before: 15,
+        proactive_warning_enabled: true,
         ai_reminder_call: {
             enabled: false,
             interval: 'day' as 'week' | 'day' | 'hour' | 'same_day'
@@ -82,6 +84,32 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
         }
     };
 
+    // Auto-fetch address from CEP
+    useEffect(() => {
+        const cleanCep = cep.replace(/\D/g, '');
+        if (cleanCep.length === 8) {
+            handleLookupCep(cleanCep);
+        }
+    }, [cep]);
+
+    const handleLookupCep = async (cleanCep: string) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            const data = await response.json();
+            if (!data.erro) {
+                const fullAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`;
+                setAddress(fullAddress);
+                // Also update searchQuery to sync map if needed
+                setSearchQuery(fullAddress);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar CEP:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const addLogToHistory = (message: string) => {
         const newLog: CallLog = {
             id: Date.now().toString(),
@@ -112,10 +140,12 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             trigger_at: new Date(scheduleData.time).toISOString(),
             location_data: {
                 address: locationAddress,
-                cep: cep,
                 transport_mode: transportMode,
                 estimated_time: estimatedTime,
-                prepare_minutes_before: 30
+                prepare_minutes_before: scheduleData.prepare_minutes_before,
+                proactive_warning_enabled: scheduleData.proactive_warning_enabled,
+                lat: location?.lat,
+                lng: location?.lng
             },
             ai_reminder_call: scheduleData.ai_reminder_call
         });
@@ -146,7 +176,11 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             trigger_at: new Date(scheduleData.time).toISOString(),
             transport_mode: transportMode,
             estimated_time: estimatedTime,
-            ai_reminder_call: scheduleData.ai_reminder_call
+            ai_reminder_call: scheduleData.ai_reminder_call,
+            prepare_minutes_before: scheduleData.prepare_minutes_before,
+            proactive_warning_enabled: scheduleData.proactive_warning_enabled,
+            lat: location?.lat,
+            lng: location?.lng
         });
 
         if (!error) {
@@ -247,8 +281,19 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     📅
                                 </button>
                                 <button 
+                                    onClick={() => {
+                                        setScheduleData({ ...scheduleData, title: lastSearchedPlace.name });
+                                        setAddress(lastSearchedPlace.address);
+                                        setShowInviteModal(true);
+                                    }}
+                                    className="w-12 h-12 rounded-2xl bg-pink-600 text-white flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-pink-600/20"
+                                    title="Convidar Amigo"
+                                >
+                                    💌
+                                </button>
+                                <button 
                                     onClick={() => toggleFavorite(lastSearchedPlace.name, lastSearchedPlace.address)}
-                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-lg ${favorites.some(f => f.name === lastSearchedPlace.name) ? 'bg-pink-600 text-white' : 'bg-white/10 opacity-50 hover:opacity-100 hover:scale-110'}`}
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-lg ${favorites.some(f => f.name === lastSearchedPlace.name) ? 'bg-red-500 text-white' : 'bg-white/10 opacity-50 hover:opacity-100 hover:scale-110'}`}
                                 >
                                     {favorites.some(f => f.name === lastSearchedPlace.name) ? '❤️' : '🤍'}
                                 </button>
@@ -420,6 +465,55 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     />
                                 </div>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div className="flex justify-between items-center mb-1.5 ml-4">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">CEP</label>
+                                        {loading && cep.replace(/\D/g, '').length === 8 && (
+                                            <span className="text-[8px] font-black text-blue-500 animate-pulse uppercase">Carregando endereço...</span>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="00000-000"
+                                        value={cep}
+                                        onChange={e => setCep(e.target.value)}
+                                        className={`w-full p-4 rounded-[1.2rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-1.5 ml-4">Chegar quanto tempo antes? (min)</label>
+                                    <input
+                                        type="number"
+                                        value={scheduleData.prepare_minutes_before}
+                                        onChange={e => setScheduleData({ ...scheduleData, prepare_minutes_before: Number(e.target.value) })}
+                                        className={`w-full p-4 rounded-[1.2rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Proactive Warning Toggle */}
+                            <div className={`p-5 rounded-[1.5rem] border border-dashed flex items-center justify-between gap-4 ${scheduleData.proactive_warning_enabled ? 'border-blue-500 bg-blue-500/5' : 'border-white/10 opacity-60'}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl">🛰️</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black uppercase text-blue-600">Aviso de Proximidade</span>
+                                        <span className="text-[8px] font-bold opacity-50 uppercase leading-none">Me avisar se eu estiver longe do local</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => setScheduleData({
+                                        ...scheduleData,
+                                        proactive_warning_enabled: !scheduleData.proactive_warning_enabled
+                                    })}
+                                    className={`w-10 h-6 rounded-full relative transition-all ${scheduleData.proactive_warning_enabled ? 'bg-blue-600' : 'bg-slate-600'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${scheduleData.proactive_warning_enabled ? 'left-5' : 'left-1'}`} />
+                                </button>
+                            </div>
+
                             <div className="pt-4 flex gap-4">
                                 <button type="button" onClick={() => setShowScheduleModal(false)} className="flex-1 py-5 font-black uppercase text-[10px] opacity-30">Cancelar</button>
                                 <button type="submit" className="flex-1 py-5 bg-blue-600 text-white rounded-[1.8rem] font-black uppercase text-[10px] shadow-xl shadow-blue-500/20">Confirmar</button>
@@ -502,7 +596,12 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-1.5 ml-4">CEP</label>
+                                    <div className="flex justify-between items-center mb-1.5 ml-4">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">CEP</label>
+                                        {loading && cep.replace(/\D/g, '').length === 8 && (
+                                            <span className="text-[8px] font-black text-blue-500 animate-pulse uppercase">Carregando endereço...</span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
                                         placeholder="00000-000"
@@ -527,14 +626,35 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-1.5 ml-4">Tempo Est. (min)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-1.5 ml-4">Chegar quanto tempo antes? (min)</label>
                                     <input
                                         type="number"
-                                        value={estimatedTime}
-                                        onChange={e => setEstimatedTime(Number(e.target.value))}
+                                        value={scheduleData.prepare_minutes_before}
+                                        onChange={e => setScheduleData({ ...scheduleData, prepare_minutes_before: Number(e.target.value) })}
                                         className={`w-full p-4 rounded-[1.2rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
                                     />
                                 </div>
+                            </div>
+
+                            {/* Proactive Warning Toggle */}
+                            <div className={`p-5 rounded-[1.5rem] border border-dashed flex items-center justify-between gap-4 ${scheduleData.proactive_warning_enabled ? 'border-pink-500 bg-pink-500/5' : 'border-white/10 opacity-60'}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xl">🛰️</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black uppercase text-pink-600">Aviso de Proximidade</span>
+                                        <span className="text-[8px] font-bold opacity-50 uppercase leading-none">Me avisar se estiver fora do tempo</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => setScheduleData({
+                                        ...scheduleData,
+                                        proactive_warning_enabled: !scheduleData.proactive_warning_enabled
+                                    })}
+                                    className={`w-10 h-6 rounded-full relative transition-all ${scheduleData.proactive_warning_enabled ? 'bg-pink-600' : 'bg-slate-600'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${scheduleData.proactive_warning_enabled ? 'left-5' : 'left-1'}`} />
+                                </button>
                             </div>
 
                             <div>

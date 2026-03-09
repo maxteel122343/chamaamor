@@ -499,6 +499,10 @@ function App() {
               currentPartnerId: '', currentPartnerNumber: '', currentPartnerNickname: ''
             };
             setActivePartner(incomingPartner);
+            if (newCall.metadata?.reason === 'location_warning') {
+                setCallReason(`location_warning:${newCall.metadata.reminder_id}`);
+                setAppState('INCOMING');
+            }
           }
           if (newCall.is_ai_call) {
             pendingCallIsHumanRef.current = false;

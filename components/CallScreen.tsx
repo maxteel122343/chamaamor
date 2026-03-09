@@ -503,6 +503,7 @@ Categorias válidas: comportamento, emocao, ciume, humor, habito, preferencia, p
       let extraContext = "";
       if (callReason === "callback_abrupt") extraContext = "Motivo da ligação: O usuário desligou na cara antes. Cobre explicações.";
       else if (callReason?.startsWith("reminder:")) extraContext = `Motivo da ligação: Lembrete agendado sobre: ${callReason.split(':')[1]}`;
+      else if (callReason?.startsWith("location_warning:")) extraContext = `ALERTA DE LOCALIZAÇÃO PROATIVO: Você percebeu pelo GPS que o usuário NÃO está no local do compromisso agendado e corre o risco de se atrasar (ou já deveria estar lá). Ligue para avisar, pergunte onde ele está agora e se ele precisa de ajuda para chegar ao local. Seja prestativa e atenciosa.`;
       else if (callReason === "curiosity_calendar") extraContext = "Motivo da ligação: Você percebeu que o usuário alterou um compromisso que você tinha marcado no calendário. Fique curiosa, pergunte por que ele mudou e se ele ainda quer que você o lembre.";
       else if (callReason === "random") extraContext = "Motivo da ligação: Você sentiu saudades e ligou aleatoriamente.";
       else if (callReason === "receptionist") extraContext = `VOCÊ ESTÁ ATENDENDO POR SEU PARCEIRO "${profile.currentPartnerNickname || 'seu humano'}".

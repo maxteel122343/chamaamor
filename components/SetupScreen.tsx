@@ -127,6 +127,101 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
 
     const status = getRelationshipStatus(profile.relationshipScore);
 
+    const [currentLocation, setCurrentLocation] = useState<{ lat: number, lng: number } | null>(null);
+    const [lastWarningTime, setLastWarningTime] = useState<Record<string, number>>({});
+
+    // Track User Location
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        const watchId = navigator.geolocation.watchPosition(
+            (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (err) => console.error("Location track error:", err),
+            { enableHighAccuracy: true }
+        );
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, []);
+
+    // Proactive Location Warning Logic
+    useEffect(() => {
+        if (!user || !currentLocation) return;
+
+        const checkWarnings = async () => {
+            const { data: reminders } = await supabase
+                .from('reminders')
+                .select('*')
+                .eq('owner_id', user.id)
+                .eq('is_completed', false);
+
+            if (!reminders) return;
+
+            const now = Date.now();
+            for (const reminder of reminders) {
+                const locData = reminder.location_data;
+                if (!locData?.proactive_warning_enabled || !locData.lat || !locData.lng) continue;
+
+                const triggerAt = new Date(reminder.trigger_at).getTime();
+                const estimatedTravel = (locData.estimated_time || 15) * 60 * 1000;
+                const bufferTime = (locData.prepare_minutes_before || 15) * 60 * 1000;
+                
+                // We should alert if we are T-buffer-travel time or close to it
+                // and we are far from the place.
+                // Let's say warn 10 minutes before the "ideal departure time"
+                const idealDepartureTime = triggerAt - estimatedTravel - bufferTime;
+                const warningThreshold = 10 * 60 * 1000; // 10 minutes before ideal departure
+
+                if (now >= (idealDepartureTime - warningThreshold) && now < triggerAt) {
+                    // Check distance
+                    const distance = calculateDistance(currentLocation.lat, currentLocation.lng, locData.lat, locData.lng);
+                    
+                    // If more than 200 meters away and haven't warned recently
+                    if (distance > 0.2 && (!lastWarningTime[reminder.id] || now - lastWarningTime[reminder.id] > 30 * 60 * 1000)) {
+                        triggerProactiveCall(reminder);
+                        setLastWarningTime(prev => ({ ...prev, [reminder.id]: now }));
+                    }
+                }
+            }
+        };
+
+        const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        const triggerProactiveCall = async (reminder: any) => {
+            console.log("TRIGGERING PROACTIVE CALL for:", reminder.title);
+            const locData = reminder.location_data;
+            
+            // Create a call record
+            const { data: callData } = await supabase.from('calls').insert({
+                caller_id: profile.originalPartnerId || user.id, // The AI calling
+                target_id: user.id,
+                is_ai_call: true,
+                status: 'pending',
+                metadata: {
+                    reason: 'location_warning',
+                    reminder_id: reminder.id,
+                    reminder_title: reminder.title,
+                    destination: locData.address,
+                    distance_km: calculateDistance(currentLocation.lat, currentLocation.lng, locData.lat, locData.lng)
+                }
+            }).select().single();
+
+            if (callData) {
+                // The main App listener will catch this and show IncomingCallScreen
+                // with the specific reason
+            }
+        };
+
+        const interval = setInterval(checkWarnings, 30000); // Check every 30 seconds
+        return () => clearInterval(interval);
+    }, [user, currentLocation, lastWarningTime, profile]);
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && user) {
