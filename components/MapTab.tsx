@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { PartnerProfile, UserProfile, Reminder, CallLog } from '../types';
+import { PartnerProfile, UserProfile, Reminder, CallLog, Contact, TransportMode } from '../types';
 
 interface MapTabProps {
     user: any;
@@ -13,9 +13,15 @@ interface MapTabProps {
 export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, currentUserProfile, isDark }) => {
     const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
     const [address, setAddress] = useState<string>('');
+    const [cep, setCep] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [contacts, setContacts] = useState<Contact[]>([]);
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [transportMode, setTransportMode] = useState<TransportMode>('car');
+    const [estimatedTime, setEstimatedTime] = useState<number>(15);
     const [favorites, setFavorites] = useState<{ id: string, name: string, address: string }[]>(() => {
         const saved = localStorage.getItem(`favorites_${user?.id || 'guest'}`);
         return saved ? JSON.parse(saved) : [];
@@ -57,7 +63,20 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                 }
             );
         }
+        fetchContacts();
     }, []);
+
+    const fetchContacts = async () => {
+        if (!user) return;
+        const { data } = await supabase.from('contacts').select('*').eq('owner_id', user.id);
+        if (data) {
+            const enriched = await Promise.all(data.map(async (c) => {
+                const { data: p } = await supabase.from('profiles').select('*').eq('id', c.target_id).single();
+                return { ...c, profile: p };
+            }));
+            setContacts(enriched);
+        }
+    };
 
     const addLogToHistory = (message: string) => {
         const newLog: CallLog = {
@@ -85,7 +104,13 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
         const { error } = await supabase.from('reminders').insert({
             owner_id: user.id,
             title: `📍 ${scheduleData.title} @ ${locationAddress}`,
-            trigger_at: new Date(scheduleData.time).toISOString()
+            trigger_at: new Date(scheduleData.time).toISOString(),
+            location_data: {
+                address: locationAddress,
+                cep: cep,
+                transport_mode: transportMode,
+                estimated_time: estimatedTime
+            }
         });
 
         if (!error) {
@@ -94,6 +119,33 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             alert("Compromisso agendado com sucesso!");
         } else {
             alert("Erro ao agendar compromisso.");
+        }
+        setLoading(false);
+    };
+
+    const handleSendInvite = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!scheduleData.title || !scheduleData.time || !selectedContact) return;
+
+        setLoading(true);
+        const locationAddress = address || searchQuery || 'Localização no Mapa';
+        
+        const { error } = await supabase.from('invites').insert({
+            sender_id: user.id,
+            receiver_id: selectedContact.target_id,
+            title: scheduleData.title,
+            address: locationAddress,
+            trigger_at: new Date(scheduleData.time).toISOString(),
+            transport_mode: transportMode,
+            estimated_time: estimatedTime
+        });
+
+        if (!error) {
+            addLogToHistory(`Enviou um convite para o usuário ${selectedContact.profile?.nickname || selectedContact.profile?.display_name} para ir em "${scheduleData.title}" em ${locationAddress}.`);
+            setShowInviteModal(false);
+            alert("Convite enviado com sucesso!");
+        } else {
+            alert("Erro ao enviar convite.");
         }
         setLoading(false);
     };
@@ -150,6 +202,12 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                             className="px-6 rounded-2xl bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-500/20"
                         >
                             Agendar Aqui
+                        </button>
+                        <button 
+                            onClick={() => setShowInviteModal(true)}
+                            className="px-6 rounded-2xl bg-pink-600 text-white font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-500/20"
+                        >
+                            Convidar
                         </button>
                         <button 
                             onClick={() => toggleFavorite(searchQuery, searchQuery)}
@@ -279,15 +337,50 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Endereço/Local (Opcional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Confirmar local..."
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    className={`w-full p-5 rounded-[1.8rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Endereço/Ponto</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Confirmar local..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className={`w-full p-5 rounded-[1.8rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">CEP</label>
+                                    <input
+                                        type="text"
+                                        placeholder="00000-000"
+                                        value={cep}
+                                        onChange={e => setCep(e.target.value)}
+                                        className={`w-full p-5 rounded-[1.8rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Transporte</label>
+                                    <select 
+                                        value={transportMode} 
+                                        onChange={e => setTransportMode(e.target.value as TransportMode)}
+                                        className={`w-full p-5 rounded-[1.8rem] text-xs font-bold border outline-none appearance-none transition-all ${inputClasses}`}
+                                    >
+                                        <option value="car">🚗 Carro</option>
+                                        <option value="foot">🚶 A pé</option>
+                                        <option value="bus">🚌 Ônibus</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Distância Est.</label>
+                                    <input
+                                        type="number"
+                                        value={estimatedTime}
+                                        onChange={e => setEstimatedTime(Number(e.target.value))}
+                                        className={`w-full p-5 rounded-[1.8rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">Quando?</label>
@@ -299,10 +392,103 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     required
                                 />
                             </div>
+                            <p className="px-4 text-[9px] font-bold opacity-30 italic">Lembrete: sua IA irá te alertar 30 min antes do planejado.</p>
                             <div className="pt-4 flex gap-4">
                                 <button type="button" onClick={() => setShowScheduleModal(false)} className="flex-1 py-5 font-black opacity-30 hover:opacity-100 transition-all uppercase tracking-[0.2em] text-[10px]">Cancelar</button>
                                 <button type="submit" className="flex-1 py-5 bg-blue-600 text-white rounded-[1.8rem] font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:bg-blue-700 active:scale-95 transition-all text-[11px] disabled:opacity-50" disabled={loading}>
                                     {loading ? '...' : 'Confirmar'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Invite Modal */}
+            {showInviteModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className={`w-full max-w-lg p-10 rounded-[3.5rem] border ${cardClasses} shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] transform animate-in slide-in-from-bottom-8 duration-500`}>
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-black italic tracking-tighter uppercase text-pink-500">Convidar para o Ponto</h3>
+                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">Selecione quem você quer levar</p>
+                        </div>
+
+                        <form onSubmit={handleSendInvite} className="space-y-6">
+                            <div className="max-h-[200px] overflow-y-auto pr-2 no-scrollbar space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-3 ml-4">Seus Contatos Ativos</label>
+                                {contacts.length === 0 ? (
+                                    <p className="text-[10px] text-center py-4 opacity-30 font-bold uppercase tracking-widest">Nenhum contato encontrado</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {contacts.map(c => (
+                                            <button 
+                                                key={c.id}
+                                                type="button"
+                                                onClick={() => setSelectedContact(c)}
+                                                className={`p-4 rounded-2xl flex items-center gap-3 border transition-all ${selectedContact?.id === c.id ? 'bg-pink-600 border-pink-600 text-white shadow-lg' : 'bg-black/5 hover:bg-black/10'}`}
+                                            >
+                                                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                                                    {c.profile?.avatar_url ? <img src={c.profile.avatar_url} className="w-full h-full object-cover" /> : '👤'}
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-tighter truncate">{c.profile?.nickname || c.profile?.display_name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-3 ml-4">Atividade</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Almoço especial"
+                                        value={scheduleData.title}
+                                        onChange={e => setScheduleData({ ...scheduleData, title: e.target.value })}
+                                        className={`w-full p-4 rounded-[1.5rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-3 ml-4">Quando?</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={scheduleData.time}
+                                        onChange={e => setScheduleData({ ...scheduleData, time: e.target.value })}
+                                        className={`w-full p-4 rounded-[1.5rem] text-xs font-bold border outline-none transition-all ${inputClasses}`}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-3 ml-4">Transporte Sugestão</label>
+                                    <select 
+                                        value={transportMode} 
+                                        onChange={e => setTransportMode(e.target.value as TransportMode)}
+                                        className={`w-full p-4 rounded-[1.5rem] text-xs font-bold border outline-none appearance-none transition-all ${inputClasses}`}
+                                    >
+                                        <option value="car">🚗 Carro</option>
+                                        <option value="foot">🚶 A pé</option>
+                                        <option value="bus">🚌 Ônibus</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-pink-600 block mb-3 ml-4">Tempo Est. (min)</label>
+                                    <input
+                                        type="number"
+                                        value={estimatedTime}
+                                        onChange={e => setEstimatedTime(Number(e.target.value))}
+                                        className={`w-full p-4 rounded-[1.5rem] text-sm font-bold border outline-none transition-all ${inputClasses}`}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex gap-4">
+                                <button type="button" onClick={() => setShowInviteModal(false)} className="flex-1 py-5 font-black opacity-30 hover:opacity-100 transition-all uppercase tracking-[0.2em] text-[10px]">Cancelar</button>
+                                <button type="submit" className="flex-1 py-5 bg-pink-600 text-white rounded-[1.8rem] font-black uppercase tracking-widest shadow-xl shadow-pink-500/30 hover:bg-pink-700 active:scale-95 transition-all text-[11px] disabled:opacity-50" disabled={loading || !selectedContact}>
+                                    {loading ? '...' : 'Enviar Convite'}
                                 </button>
                             </div>
                         </form>

@@ -186,6 +186,23 @@ export interface Contact {
   profile?: UserProfile;
 }
 
+export type InviteStatus = 'pending' | 'accepted' | 'rejected';
+export type TransportMode = 'car' | 'foot' | 'bus';
+
+export interface LocationInvite {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  title: string;
+  address: string;
+  trigger_at: string;
+  status: InviteStatus;
+  created_at: string;
+  transport_mode?: TransportMode;
+  estimated_time?: number; // in minutes
+  sender_profile?: UserProfile;
+}
+
 export interface Reminder {
   id: string;
   owner_id: string;
@@ -196,6 +213,16 @@ export interface Reminder {
   creator_ai_id?: string | null;
   creator_ai_name?: string | null;
   creator_ai_number?: string | null;
+  location_data?: {
+    address: string;
+    lat?: number;
+    lng?: number;
+    cep?: string;
+    transport_mode?: TransportMode;
+    estimated_time?: number;
+    prepare_minutes_before?: number;
+  };
+  invite_id?: string;
 }
 export interface ChatMessage {
   id: string;

@@ -8,6 +8,7 @@ import { QuickChatTab } from './QuickChatTab';
 import { supabase } from '../supabaseClient';
 import { ChatWindow } from './ChatWindow';
 import { MapTab } from './MapTab';
+import { InvitesTab } from './InvitesTab';
 
 interface SetupScreenProps {
     profile: PartnerProfile;
@@ -25,12 +26,12 @@ interface SetupScreenProps {
 }
 
 export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, onStartCall, onCallPartner, nextScheduledCall, apiKey, setApiKey, user, currentUserProfile, onUpdateUserProfile, showAuth, setShowAuth }) => {
-    const [activeTab, setActiveTabState] = useState<'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map'>(() => {
+    const [activeTab, setActiveTabState] = useState<'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map' | 'invites'>(() => {
         const saved = sessionStorage.getItem('warm_activeTab');
         return (saved as any) || 'dashboard';
     });
 
-    const setActiveTab = (tab: 'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map') => {
+    const setActiveTab = (tab: 'dashboard' | 'gallery' | 'contacts' | 'calendar' | 'memory' | 'config' | 'chats' | 'map' | 'invites') => {
         sessionStorage.setItem('warm_activeTab', tab);
         setActiveTabState(tab);
     };
@@ -64,20 +65,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
     const ringtoneInputRef = useRef<HTMLInputElement>(null);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+    const [pendingInvitesCount, setPendingInvitesCount] = useState(0); // Added for invites
 
-    const fetchUnreadMessages = async () => {
+    const fetchUnreadCount = async () => {
         if (!user) return;
-        const { count } = await supabase
-            .from('chat_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('receiver_id', user.id)
-            .eq('is_read', false);
-        setUnreadMessagesCount(count || 0);
+        const { count: msgCount } = await supabase.from('chat_messages').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('is_read', false);
+        setUnreadMessagesCount(msgCount || 0);
+
+        const { count: inviteCount } = await supabase.from('invites').select('*', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('status', 'pending');
+        setPendingInvitesCount(inviteCount || 0);
     };
 
     useEffect(() => {
         if (!user) return;
-        fetchUnreadMessages();
+        fetchUnreadCount();
 
         const channel = supabase
             .channel('unread_messages_count')
@@ -86,7 +87,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                 schema: 'public',
                 table: 'chat_messages'
             }, () => {
-                fetchUnreadMessages();
+                fetchUnreadCount();
             })
             .subscribe();
 
@@ -302,13 +303,16 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
     React.useEffect(() => {
         if (user) {
             fetchNotifications();
-            // Optional: Realtime subscription
-            const channel = supabase.channel('notifications')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
-                    fetchNotifications();
-                })
-                .subscribe();
-            return () => { channel.unsubscribe(); };
+            fetchUnreadCount();
+            
+            const channels = [
+                supabase.channel('notifications').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => fetchNotifications()),
+                supabase.channel('chats').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => fetchUnreadCount()),
+                supabase.channel('invites').on('postgres_changes', { event: '*', schema: 'public', table: 'invites' }, () => fetchUnreadCount())
+            ];
+            
+            channels.forEach(c => c.subscribe());
+            return () => { channels.forEach(c => c.unsubscribe()); };
         }
     }, [user]);
 
@@ -549,6 +553,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                     {[
                         { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'chats', label: 'Chats', icon: '💬', badge: unreadMessagesCount },
+                        { id: 'invites', label: 'Convites', icon: '💌', badge: pendingInvitesCount },
                         { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'map', label: 'Mapa', icon: '📍' },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
@@ -869,6 +874,12 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                         {activeTab === 'map' && user && (
                             <div className="w-full max-w-5xl mx-auto">
                                 <MapTab user={user} profile={profile} setProfile={setProfile} currentUserProfile={currentUserProfile} isDark={isDark} />
+                            </div>
+                        )}
+
+                        {activeTab === 'invites' && user && (
+                            <div className="w-full max-w-5xl mx-auto">
+                                <InvitesTab user={user} profile={profile} isDark={isDark} currentUserProfile={currentUserProfile} onCallPartner={onCallPartner} onOpenChat={(target, isAi) => setActiveChat({ profile: target, isAi })} />
                             </div>
                         )}
 
