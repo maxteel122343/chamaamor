@@ -104,10 +104,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                     .in('id', partnerIds);
 
                 if (profiles) {
-                    const convs: Conversation[] = profiles.map(p => ({
-                        profile: p,
-                        isAi: partners.get(p.id) || false
+                    const convs: Conversation[] = await Promise.all(profiles.map(async (p) => {
+                        const { data: lastMsg } = await supabase
+                            .from('chat_messages')
+                            .select('content, created_at')
+                            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${p.id}),and(sender_id.eq.${p.id},receiver_id.eq.${currentUser.id})`)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        return {
+                            profile: p,
+                            isAi: partners.get(p.id) || false,
+                            lastMessage: lastMsg?.content,
+                            lastMessageDate: lastMsg?.created_at
+                        };
                     }));
+
+                    // Sort by date
+                    convs.sort((a, b) => {
+                        const dateA = a.lastMessageDate || '0';
+                        const dateB = b.lastMessageDate || '0';
+                        return dateB.localeCompare(dateA);
+                    });
+
                     if (!convs.find(c => c.profile.id === initialTarget.id)) {
                         convs.unshift({ profile: initialTarget, isAi: initialIsAi });
                     }
@@ -170,6 +190,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
 
     useEffect(() => {
         fetchConversations();
+
+        // Listen for new messages to refresh the conversation list (new partners)
+        const channel = supabase.channel('chat_window_conv_sync')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_messages'
+            }, () => {
+                fetchConversations();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     useEffect(() => {

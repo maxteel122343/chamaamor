@@ -5,7 +5,7 @@ import { UserProfile, Contact, PartnerProfile, Mood, VoiceName, Accent, Callback
 interface QuickChatTabProps {
     currentUser: any;
     profile: PartnerProfile;
-    onCallPartner: (profile: PartnerProfile) => void;
+    onCallPartner: (profile: PartnerProfile, isAi: boolean, callId: string) => void;
     onOpenChat: (target: UserProfile, isAi: boolean) => void;
     isDark: boolean;
 }
@@ -168,9 +168,10 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
         return { label: 'Apaixonada', color: 'text-rose-500', badge: '🔥' };
     };
 
-    const handleCallContact = (contact: Contact) => {
-        if (!contact.profile) return;
-        const p: PartnerProfile = {
+    const handleCallContact = async (contact: Contact) => {
+        if (!contact.profile || !currentUser) return;
+        
+        const partnerProfile: PartnerProfile = {
             name: contact.is_ai_contact
                 ? (contact.alias || contact.profile.ai_settings?.name || contact.profile.display_name)
                 : (contact.alias || contact.profile.display_name),
@@ -198,7 +199,26 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
             currentPartnerNickname: contact.profile.ai_settings?.currentPartnerNickname || '',
             isAiReceptionistEnabled: contact.profile.ai_settings?.isAiReceptionistEnabled || false
         };
-        onCallPartner(p);
+
+        // Create call record for signaling
+        const { data: callData, error } = await supabase
+            .from('calls')
+            .insert({
+                caller_id: currentUser.id,
+                target_id: contact.profile.id,
+                is_ai_call: contact.is_ai_contact,
+                status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (error || !callData) {
+            alert("Erro ao sinalizar chamada. Verifique sua conexão.");
+            console.error(error);
+            return;
+        }
+
+        onCallPartner(partnerProfile, contact.is_ai_contact, callData.id);
     };
 
     const filteredContacts = contacts.filter(c =>
@@ -292,7 +312,7 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
                                 </svg>
                             </button>
                             <button
-                                onClick={(e) => { e.stopPropagation(); onCallPartner(profile); }}
+                                onClick={(e) => { e.stopPropagation(); onCallPartner(profile, true, 'main-ai'); }}
                                 className="flex-shrink-0 w-12 h-12 rounded-[1.25rem] bg-blue-600 text-white flex items-center justify-center shadow-xl shadow-blue-600/30 hover:scale-110 active:scale-95 transition-all"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-white" viewBox="0 0 24 24">

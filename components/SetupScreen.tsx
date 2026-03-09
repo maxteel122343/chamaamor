@@ -973,7 +973,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                                 {/* Action Buttons */}
                                                 <div className="flex gap-3">
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); setActiveTab('chats'); }}
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            setActiveChat({ 
+                                                                profile: {
+                                                                    id: user?.id || '',
+                                                                    display_name: profile.name,
+                                                                    personal_number: profile.currentPartnerNumber,
+                                                                    ai_number: profile.ai_number || '',
+                                                                    avatar_url: profile.image,
+                                                                    ai_settings: profile as any
+                                                                }, 
+                                                                isAi: true 
+                                                            }); 
+                                                        }}
                                                         className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-100 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-200 dark:hover:bg-blue-600/20 transition-all"
                                                     >
                                                         Chat ✈️
@@ -1070,7 +1083,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                                     {/* Action Buttons */}
                                                     <div className="flex gap-3">
                                                         <button
-                                                            onClick={(e) => { e.stopPropagation(); setActiveTab('chats'); }}
+                                                            onClick={(e) => { 
+                                                                e.stopPropagation(); 
+                                                                setActiveChat({ 
+                                                                    profile: {
+                                                                        id: user?.id || '', // Note: custom AIs currently share the same chat context
+                                                                        display_name: ai.name,
+                                                                        personal_number: ai.currentPartnerNumber,
+                                                                        ai_number: ai.ai_number || '',
+                                                                        avatar_url: ai.image,
+                                                                        ai_settings: ai as any
+                                                                    }, 
+                                                                    isAi: true 
+                                                                }); 
+                                                            }}
                                                             className="flex-1 flex items-center justify-center gap-2 py-3 bg-pink-100 text-pink-600 dark:bg-pink-600/10 dark:text-pink-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-200 dark:hover:bg-pink-600/20 transition-all"
                                                         >
                                                             Chat ✈️
@@ -1642,7 +1668,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                         )}
 
                         {activeTab === 'chats' && (
-                            <div className="w-full h-[calc(100vh-200px)] md:h-[calc(100vh-280px)]"><QuickChatTab currentUser={user} profile={profile} onCallPartner={onStartCall} onOpenChat={(target, isAi) => setActiveChat({ profile: target, isAi })} isDark={isDark} /></div>
+                            <div className="w-full h-[calc(100vh-200px)] md:h-[calc(100vh-280px)]"><QuickChatTab currentUser={user} profile={profile} onCallPartner={onCallPartner} onOpenChat={(target, isAi) => setActiveChat({ profile: target, isAi })} isDark={isDark} /></div>
                         )}
                     </div>
                 </div>
@@ -1789,6 +1815,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
             {
                 activeChat && (
                     <ChatWindow
+                        key={`${activeChat.profile.id}-${activeChat.isAi}`}
                         currentUser={user}
                         targetProfile={activeChat.profile}
                         isAi={activeChat.isAi}

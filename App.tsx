@@ -342,11 +342,19 @@ function App() {
   };
 
   const handleAcceptCallback = async () => {
-    if (activeCallId) {
-      await supabase.from('calls').update({ status: 'accepted' }).eq('id', activeCallId);
+    if (!activeCallId) return;
+
+    // Update status to accepted
+    await supabase.from('calls').update({ status: 'accepted' }).eq('id', activeCallId);
+
+    // Fetch the call to be sure whether it's human or AI
+    const { data: currentCall } = await supabase.from('calls').select('is_ai_call').eq('id', activeCallId).single();
+    
+    if (currentCall && !currentCall.is_ai_call) {
+      setAppState('HUMAN_CALL');
+    } else {
+      setAppState('CALLING');
     }
-    if (pendingCallIsHumanRef.current) setAppState('HUMAN_CALL');
-    else setAppState('CALLING');
   };
 
   const handleDeclineCallback = async () => {
@@ -367,7 +375,13 @@ function App() {
   };
 
   const handleAiPickupCallback = async () => {
-    if (activeCallId) await supabase.from('calls').update({ status: 'accepted_by_ai' }).eq('id', activeCallId);
+    if (!activeCallId) return;
+    
+    // Check current status to avoid race condition with user clicking accept
+    const { data: currentCall } = await supabase.from('calls').select('status').eq('id', activeCallId).single();
+    if (currentCall?.status === 'accepted' || currentCall?.status === 'rejected') return;
+
+    await supabase.from('calls').update({ status: 'accepted_by_ai' }).eq('id', activeCallId);
     setAppState('SETUP');
     setActiveCallId(null);
   };
@@ -416,8 +430,8 @@ function App() {
       if (updatedCall.id === activeCallIdRef.current) {
         setCallStatus(updatedCall.status);
         if (updatedCall.status === 'accepted') {
-          if (isOutboundHumanCallRef.current) {
-            setIsHumanCallCaller(true);
+          if (!updatedCall.is_ai_call) {
+            setIsHumanCallCaller(updatedCall.caller_id === user.id);
             setAppState('HUMAN_CALL');
           } else if (updatedCall.caller_id === user.id) {
             setAppState('CALLING');
