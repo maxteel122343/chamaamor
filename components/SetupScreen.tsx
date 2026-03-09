@@ -567,13 +567,13 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                 setActiveTab(tab.id as any);
                                 setIsSidebarExpanded(false);
                             }}
-                            className={`w-full group relative flex items-center gap-4 p-3.5 rounded-2xl transition-all duration-300 ${activeTab === tab.id
+                            className={`w-full group relative flex items-center transition-all duration-300 ${isSidebarExpanded ? 'gap-4 p-3.5' : 'justify-center p-3.5'} ${activeTab === tab.id
                                 ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
                                 : `opacity-40 hover:opacity-100 ${isLight ? 'hover:bg-slate-100' : 'hover:bg-white/5'}`
-                                }`}
+                                } p-3.5 rounded-2xl`}
                         >
-                            <div className="relative">
-                                <span className="text-xl flex-shrink-0 transition-transform group-hover:scale-110">{tab.icon}</span>
+                            <div className="relative flex items-center justify-center">
+                                <span className="text-xl transition-transform group-hover:scale-110">{tab.icon}</span>
                                 {tab.badge && tab.badge > 0 && (
                                     <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-[#0b0c10] px-0.5 animate-in zoom-in duration-300">
                                         {tab.badge > 9 ? '9+' : tab.badge}

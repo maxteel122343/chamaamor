@@ -362,11 +362,15 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             </div>
 
             {showScheduleModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-                    <div className={`w-full max-w-sm p-10 rounded-[3.5rem] border ${cardClasses} shadow-2xl`}>
-                        <div className="mb-8">
-                            <h3 className="text-2xl font-black italic tracking-tighter uppercase">Agendar no Local</h3>
-                        </div>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
+                    <div className={`w-full max-w-sm p-10 rounded-[4rem] border ${cardClasses} shadow-2xl relative transform animate-in slide-in-from-bottom-8 duration-500`}>
+                        <button 
+                            onClick={() => setShowScheduleModal(false)}
+                            className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-all text-xl opacity-40 hover:opacity-100"
+                        >
+                            ✕
+                        </button>
+                        <h3 className="text-2xl font-black italic tracking-tighter uppercase text-blue-600 mb-8">Agendar Local</h3>
                         <form onSubmit={handleScheduleAtLocation} className="space-y-6">
                             <div>
                                 <label className="text-[10px] font-black uppercase tracking-widest text-blue-600 block mb-3 ml-4">O que vamos fazer?</label>
@@ -426,8 +430,14 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             )}
 
             {showInviteModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-                    <div className={`w-full max-w-lg p-10 rounded-[3.5rem] border ${cardClasses} shadow-2xl`}>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className={`w-full max-w-lg p-10 rounded-[4rem] border ${cardClasses} shadow-2xl relative transform animate-in slide-in-from-bottom-8 duration-500`}>
+                        <button 
+                            onClick={() => setShowInviteModal(false)}
+                            className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-all text-xl opacity-40 hover:opacity-100"
+                        >
+                            ✕
+                        </button>
                         <h3 className="text-2xl font-black italic tracking-tighter uppercase text-pink-500 mb-8">Convidar para o Ponto</h3>
                         <form onSubmit={handleSendInvite} className="space-y-6">
                             <div className="max-h-[160px] overflow-y-auto pr-2 no-scrollbar space-y-2">
