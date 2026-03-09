@@ -367,6 +367,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
             display_name: currentUserProfile.display_name,
             nickname: currentUserProfile.nickname,
             avatar_url: currentUserProfile.avatar_url,
+            city: currentUserProfile.city,
+            is_location_visible: currentUserProfile.is_location_visible,
             status: 'online'
         }).eq('id', user.id);
 
@@ -1308,6 +1310,41 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                         </div>
                                     </div>
 
+                                    <div className="mt-8 flex flex-col items-center w-full max-sm:px-4">
+                                        <div className="w-full space-y-6">
+                                            <div className="relative group">
+                                                <input
+                                                    type="text"
+                                                    value={currentUserProfile?.city || ''}
+                                                    onChange={(e) => onUpdateUserProfile({ ...currentUserProfile!, city: e.target.value })}
+                                                    className={`w-full p-6 pl-14 rounded-[2rem] border text-sm font-bold italic tracking-tighter outline-none transition-all ${inputClasses}`}
+                                                    placeholder="Sua Cidade (Ex: São Paulo, SP)"
+                                                />
+                                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-30">📍</span>
+                                                <p className="text-[8px] font-black uppercase tracking-widest opacity-20 mt-2 ml-4">Localização da Cidade</p>
+                                            </div>
+
+                                            <div className={`p-6 rounded-[2rem] border ${borderClass} flex items-center justify-between group hover:border-blue-500/30 transition-all`}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-xl">🌍</div>
+                                                    <div>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest leading-none">Visibilidade Geográfica</h4>
+                                                        <p className="text-[8px] font-bold opacity-30 uppercase mt-1">Mostrar sua cidade para contatos</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const newStatus = !currentUserProfile?.is_location_visible;
+                                                        onUpdateUserProfile({ ...currentUserProfile!, is_location_visible: newStatus });
+                                                        supabase.from('profiles').update({ is_location_visible: newStatus }).eq('id', user.id).then();
+                                                    }}
+                                                    className={`w-14 h-8 rounded-full p-1 transition-all duration-500 ${currentUserProfile?.is_location_visible ? 'bg-blue-600' : 'bg-slate-200 dark:bg-white/10'}`}
+                                                >
+                                                    <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-500 ${currentUserProfile?.is_location_visible ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="mt-8 flex flex-col items-center w-full max-w-sm">
                                         <input
                                             type="text"

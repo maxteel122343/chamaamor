@@ -175,6 +175,8 @@ export interface UserProfile {
   nickname?: string;
   is_searchable?: boolean;
   blocked_users?: string[];
+  city?: string;
+  is_location_visible?: boolean;
 }
 
 export interface Contact {

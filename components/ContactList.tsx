@@ -489,6 +489,15 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                 >
                                                     📋
                                                 </button>
+
+                                                {contact.profile?.is_location_visible && contact.profile?.city && (
+                                                    <div className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md bg-blue-500/5 border border-blue-500/10">
+                                                        <span className="text-[8px]">📍</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-tighter text-blue-500/60 truncate max-w-[80px]">
+                                                            {contact.profile.city}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 md:gap-2">
@@ -560,7 +569,17 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                     <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 uppercase tracking-widest border border-blue-500/10">Salvo</span>
                                                 )}
                                             </div>
-                                            <p className="text-[9px] md:text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mt-1">Conectado Agora</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-[9px] md:text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Conectado Agora</p>
+                                                {u.is_location_visible && u.city && (
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/5 border border-emerald-500/10">
+                                                        <span className="text-[8px]">📍</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-tighter text-emerald-500/60 truncate max-w-[80px]">
+                                                            {u.city}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         {contacts.some(c => c.target_id === u.id) ? (
                                             <div className="flex items-center gap-1 md:gap-2">
@@ -687,6 +706,14 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-pink-500">Ai</span>
                                                     <p className="text-[10px] font-bold">{formatDisplayNumber(result.ai_number, true)}</p>
                                                 </div>
+                                                {result.is_location_visible && result.city && (
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/5 border border-blue-500/10 opacity-60">
+                                                        <span className="text-[8px]">📍</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-tighter text-blue-500/80">
+                                                            {result.city}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex gap-2 w-full sm:w-auto">
