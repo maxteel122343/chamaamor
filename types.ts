@@ -135,6 +135,7 @@ export interface PartnerProfile {
   ringtoneUrl?: string;
   ringtoneName?: string;
   ephemeralHumanChats?: boolean;
+  isAiChatInterceptEnabled?: boolean;
 }
 
 export const DEFAULT_RINGTONES = [

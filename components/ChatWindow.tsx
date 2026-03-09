@@ -45,6 +45,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
             .from('chat_messages')
             .select('*')
             .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${activeTarget.id}),and(sender_id.eq.${activeTarget.id},receiver_id.eq.${currentUser.id})`)
+            .eq('is_to_ai', activeIsAi)
             .order('created_at', { ascending: true });
 
         if (data) {
@@ -92,11 +93,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 .select('sender_id, is_to_ai')
                 .eq('receiver_id', currentUser.id);
 
-            const partners = new Map<string, boolean>();
-            sentData?.forEach(m => partners.set(m.receiver_id, !!m.is_to_ai));
-            receivedData?.forEach(m => partners.set(m.sender_id, !!m.is_to_ai));
+            const partnersSet = new Set<string>(); // Unique "id:isAi" strings
+            sentData?.forEach(m => partnersSet.add(`${m.receiver_id}:${!!m.is_to_ai}`));
+            receivedData?.forEach(m => partnersSet.add(`${m.sender_id}:${!!m.is_to_ai}`));
 
-            const partnerIds = Array.from(partners.keys());
+            const partnersList = Array.from(partnersSet).map(s => {
+                const [id, isAi] = s.split(':');
+                return { id, isAi: isAi === 'true' };
+            });
+
+            const partnerIds = Array.from(new Set(partnersList.map(p => p.id)));
             if (partnerIds.length > 0) {
                 const { data: profiles } = await supabase
                     .from('profiles')
@@ -104,22 +110,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                     .in('id', partnerIds);
 
                 if (profiles) {
-                    const convs: Conversation[] = await Promise.all(profiles.map(async (p) => {
+                    const profileMap = new Map((profiles as UserProfile[]).map(p => [p.id, p]));
+                    const convs: Conversation[] = await Promise.all(partnersList.map(async (pItem) => {
+                        const pProfile = profileMap.get(pItem.id);
+                        if (!pProfile) return null;
+
                         const { data: lastMsg } = await supabase
                             .from('chat_messages')
                             .select('content, created_at')
-                            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${p.id}),and(sender_id.eq.${p.id},receiver_id.eq.${currentUser.id})`)
+                            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${pItem.id}),and(sender_id.eq.${pItem.id},receiver_id.eq.${currentUser.id})`)
+                            .eq('is_to_ai', pItem.isAi)
                             .order('created_at', { ascending: false })
                             .limit(1)
                             .maybeSingle();
 
-                        return {
-                            profile: p,
-                            isAi: partners.get(p.id) || false,
+                        const c: Conversation = {
+                            profile: pProfile,
+                            isAi: pItem.isAi,
                             lastMessage: lastMsg?.content,
                             lastMessageDate: lastMsg?.created_at
                         };
-                    }));
+                        return c;
+                    })).then(results => results.filter((c): c is Conversation => c !== null));
 
                     // Sort by date
                     convs.sort((a, b) => {
@@ -128,7 +140,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                         return dateB.localeCompare(dateA);
                     });
 
-                    if (!convs.find(c => c.profile.id === initialTarget.id)) {
+                    if (!convs.find(c => c.profile.id === initialTarget.id && c.isAi === initialIsAi)) {
                         convs.unshift({ profile: initialTarget, isAi: initialIsAi });
                     }
                     setConversations(convs);
@@ -156,7 +168,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 filter: `receiver_id=eq.${currentUser.id}`
             }, (payload) => {
                 const newMsg = payload.new as ChatMessage;
-                if (newMsg.sender_id === activeTarget.id) {
+                if (newMsg.sender_id === activeTarget.id && !!newMsg.is_to_ai === activeIsAi) {
                     setMessages(prev => {
                         if (prev.find(m => m.id === newMsg.id)) return prev;
                         return [...prev, newMsg];
@@ -172,7 +184,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
                 filter: `sender_id=eq.${currentUser.id}`
             }, (payload) => {
                 const newMsg = payload.new as ChatMessage;
-                if (newMsg.receiver_id === activeTarget.id) {
+                if (newMsg.receiver_id === activeTarget.id && !!newMsg.is_to_ai === activeIsAi) {
                     setMessages(prev => {
                         if (prev.find(m => m.id === newMsg.id)) return prev;
                         return [...prev, newMsg];
@@ -333,7 +345,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ currentUser, targetProfi
 
         if (sentMsg) {
             setMessages(prev => [...prev, sentMsg]);
-            if (activeIsAi) {
+            // Trigger AI response if talking to AI OR if receiver has AI Chat Intercept enabled
+            const receiverAiSettings = activeTarget.ai_settings as any;
+            const isInterceptEnabled = receiverAiSettings?.isAiChatInterceptEnabled === true;
+
+            if (activeIsAi || isInterceptEnabled) {
                 handleAiResponse(msgContent, [...messages, sentMsg]);
             }
         }

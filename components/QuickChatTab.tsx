@@ -65,6 +65,7 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
     }, [currentUser]);
 
     const fetchContacts = async () => {
+        if (!currentUser) return;
         setLoading(true);
         // 1. Fetch Explicit Contacts
         const { data: contactData } = await supabase
@@ -90,69 +91,101 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
                 .select('sender_id, is_to_ai')
                 .eq('receiver_id', currentUser.id);
 
-            const historyPartners = new Map<string, boolean>();
+            const historyPartnersSet = new Set<string>(); // "id:isAi"
             sentMsgs?.forEach(m => {
-                if (m.receiver_id !== currentUser.id) historyPartners.set(m.receiver_id, !!m.is_to_ai);
+                if (m.receiver_id !== currentUser.id) historyPartnersSet.add(`${m.receiver_id}:${!!m.is_to_ai}`);
             });
             recvMsgs?.forEach(m => {
-                if (m.sender_id !== currentUser.id) historyPartners.set(m.sender_id, !!m.is_to_ai);
+                if (m.sender_id !== currentUser.id) historyPartnersSet.add(`${m.sender_id}:${!!m.is_to_ai}`);
             });
 
-            const newPartnerIds = Array.from(historyPartners.keys()).filter(id => !contactIds.has(id));
+            const partnersList = Array.from(historyPartnersSet).map(s => {
+                const [id, isAi] = s.split(':');
+                return { id, isAi: isAi === 'true' };
+            });
 
-            if (newPartnerIds.length > 0) {
-                const { data: newProfiles } = await supabase
+            const profileIdsToFetch = Array.from(new Set(partnersList.map(p => p.id))).filter(id => !contactIds.has(id));
+
+            if (profileIdsToFetch.length > 0) {
+                const { data: profiles } = await supabase
                     .from('profiles')
                     .select('*')
-                    .in('id', newPartnerIds);
+                    .in('id', profileIdsToFetch);
 
-                if (newProfiles) {
-                    newProfiles.forEach(p => {
-                        allContacts.push({
-                            id: `virtual-${p.id}`,
-                            owner_id: currentUser.id,
-                            target_id: p.id,
-                            is_ai_contact: historyPartners.get(p.id) || false,
-                            alias: null,
-                            profile: p
-                        });
+                if (profiles) {
+                    const historyContacts: Contact[] = (profiles as UserProfile[]).flatMap(p => {
+                        const hasAi = historyPartnersSet.has(`${p.id}:true`);
+                        const hasHuman = historyPartnersSet.has(`${p.id}:false`);
+                        const items: Contact[] = [];
+                        if (hasHuman) items.push({ id: `h-${p.id}`, owner_id: currentUser.id, target_id: p.id, is_ai_contact: false, alias: null, profile: p });
+                        if (hasAi) items.push({ id: `a-${p.id}`, owner_id: currentUser.id, target_id: p.id, is_ai_contact: true, alias: null, profile: p });
+                        return items;
                     });
+                    
+                    const filteredHistory = historyContacts.filter(hc => {
+                        const exists = allContacts.some(ac => ac.target_id === hc.target_id && ac.is_ai_contact === hc.is_ai_contact);
+                        return !exists;
+                    });
+
+                    allContacts = [...allContacts, ...filteredHistory];
+                }
+            }
+
+            // Fetch last messages to show in the list with is_to_ai filter
+            const allTargetIds = Array.from(new Set(allContacts.map(c => c.target_id)));
+            if (allTargetIds.length > 0) {
+                const { data: lastMsgs, error: rpcError } = await supabase.rpc('get_last_messages_for_user', { 
+                    user_id: currentUser.id 
+                });
+
+                if (lastMsgs && !rpcError) {
+                    const msgMap: any = {};
+                    lastMsgs.forEach((m: any) => {
+                        const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+                        msgMap[`${partnerId}:${!!m.is_to_ai}`] = m;
+                    });
+                    setLastMessages(msgMap);
+                } else {
+                    const { data: fallbackMsgs } = await supabase
+                        .from('chat_messages')
+                        .select('*')
+                        .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+                        .order('created_at', { ascending: false });
+
+                    if (fallbackMsgs) {
+                        const msgMap: any = {};
+                        fallbackMsgs.forEach(m => {
+                            const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+                            const key = `${partnerId}:${!!m.is_to_ai}`;
+                            if (!msgMap[key]) msgMap[key] = m;
+                        });
+                        setLastMessages(msgMap);
+                    }
                 }
             }
         } catch (err) {
-            console.error("Erro ao buscar parceiros de chat:", err);
+            console.error("Error in fetchContacts:", err);
         }
 
-        setContacts(allContacts);
-
-        // 3. Fetch last messages for all identified contacts
-        allContacts.forEach(async (c) => {
-            const { data: msgData } = await supabase
+        // Also fetch for main AI (The user themselves as a target)
+        try {
+            const { data: mainMsg } = await supabase
                 .from('chat_messages')
-                .select('content, is_read, sender_id, created_at')
-                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${c.target_id}),and(sender_id.eq.${c.target_id},receiver_id.eq.${currentUser.id})`)
+                .select('content, is_read, sender_id, created_at, is_to_ai')
+                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id})`)
+                .eq('is_to_ai', true)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
 
-            if (msgData) {
-                setLastMessages(prev => ({ ...prev, [c.target_id]: msgData }));
+            if (mainMsg) {
+                setLastMessages(prev => ({ ...prev, [`${currentUser.id}:true`]: mainMsg }));
             }
-        });
-
-        // Also fetch for main AI
-        const { data: mainMsg } = await supabase
-            .from('chat_messages')
-            .select('content, is_read, sender_id, created_at, is_to_ai')
-            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id})`)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (mainMsg) {
-            setLastMessages(prev => ({ ...prev, [currentUser.id]: mainMsg }));
+        } catch (err) {
+            console.error("Error fetching main AI message:", err);
         }
 
+        setContacts(allContacts);
         setLoading(false);
     };
 
@@ -229,8 +262,8 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
     const recentList = filteredContacts
         .filter(c => !pinnedIds.includes(c.id))
         .sort((a, b) => {
-            const dateA = lastMessages[a.target_id]?.created_at || '0';
-            const dateB = lastMessages[b.target_id]?.created_at || '0';
+            const dateA = lastMessages[`${a.target_id}:${a.is_ai_contact}`]?.created_at || '0';
+            const dateB = lastMessages[`${b.target_id}:${b.is_ai_contact}`]?.created_at || '0';
             return dateB.localeCompare(dateA);
         });
 
@@ -286,20 +319,20 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
                                 "Sentindo sua falta. Que tal uma ligação rápida?"
                             </p>
 
-                            {/* Highlights the last message as requested */}
-                            {lastMessages[currentUser?.id] && (
-                                <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all ${!lastMessages[currentUser.id].is_read && lastMessages[currentUser.id].is_to_ai === false
-                                    ? (isDark ? 'bg-blue-600/20 border-blue-500/50 text-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm')
-                                    : (isDark ? 'bg-white/5 border-white/5 text-white/40' : 'bg-slate-50 border-slate-100 text-slate-400')
-                                    }`}>
-                                    {!lastMessages[currentUser.id].is_read && lastMessages[currentUser.id].is_to_ai === false && (
-                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                    )}
-                                    <span className="text-[11px] font-bold truncate max-w-[200px]">
-                                        {lastMessages[currentUser.id].content}
-                                    </span>
-                                </div>
-                            )}
+                             {/* Highlights the last message as requested */}
+                             {lastMessages[`${currentUser?.id}:true`] && (
+                                 <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all ${!lastMessages[`${currentUser.id}:true`].is_read && lastMessages[`${currentUser.id}:true`].sender_id !== currentUser.id
+                                     ? (isDark ? 'bg-blue-600/20 border-blue-500/50 text-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm')
+                                     : (isDark ? 'bg-white/5 border-white/5 text-white/40' : 'bg-slate-50 border-slate-100 text-slate-400')
+                                     }`}>
+                                     {!lastMessages[`${currentUser.id}:true`].is_read && lastMessages[`${currentUser.id}:true`].sender_id !== currentUser.id && (
+                                         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                     )}
+                                     <span className="text-[11px] font-bold truncate max-w-[200px]">
+                                         {lastMessages[`${currentUser.id}:true`].content}
+                                     </span>
+                                 </div>
+                             )}
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -360,19 +393,19 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
                                         Toque para iniciar conexão...
                                     </p>
 
-                                    {lastMessages[contact.target_id] && (
-                                        <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all ${!lastMessages[contact.target_id].is_read && lastMessages[contact.target_id].sender_id !== currentUser.id
-                                            ? (isDark ? 'bg-blue-600/20 border-blue-500/50 text-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm')
-                                            : (isDark ? 'bg-white/5 border-white/5 text-white/40' : 'bg-slate-50 border-slate-100 text-slate-400')
-                                            }`}>
-                                            {!lastMessages[contact.target_id].is_read && lastMessages[contact.target_id].sender_id !== currentUser.id && (
-                                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                            )}
-                                            <span className="text-[11px] font-bold truncate max-w-[200px]">
-                                                {lastMessages[contact.target_id].content}
-                                            </span>
-                                        </div>
-                                    )}
+                                     {lastMessages[`${contact.target_id}:${contact.is_ai_contact}`] && (
+                                         <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all ${!lastMessages[`${contact.target_id}:${contact.is_ai_contact}`].is_read && lastMessages[`${contact.target_id}:${contact.is_ai_contact}`].sender_id !== currentUser.id
+                                             ? (isDark ? 'bg-blue-600/20 border-blue-500/50 text-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm')
+                                             : (isDark ? 'bg-white/5 border-white/5 text-white/40' : 'bg-slate-50 border-slate-100 text-slate-400')
+                                             }`}>
+                                             {!lastMessages[`${contact.target_id}:${contact.is_ai_contact}`].is_read && lastMessages[`${contact.target_id}:${contact.is_ai_contact}`].sender_id !== currentUser.id && (
+                                                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                             )}
+                                             <span className="text-[11px] font-bold truncate max-w-[200px]">
+                                                 {lastMessages[`${contact.target_id}:${contact.is_ai_contact}`].content}
+                                             </span>
+                                         </div>
+                                     )}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button

@@ -1534,6 +1534,32 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                             </div>
                                         </div>
 
+                                        {/* Section: AI Chat Intercept / Interceptação de Chat */}
+                                        <div className={`p-10 rounded-[3rem] border ${cardClasses} relative overflow-hidden`}>
+                                            <div className={`absolute top-0 right-0 w-32 h-32 ${profile.isAiChatInterceptEnabled ? 'bg-blue-600/10' : 'bg-slate-500/10'} blur-3xl rounded-full transition-all duration-700`} />
+                                            <div className="flex justify-between items-start mb-6 relative z-10">
+                                                <div>
+                                                    <h3 className="text-sm font-bold uppercase tracking-widest text-blue-600">Auto-Resposta da IA (Chat)</h3>
+                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-30 mt-2 italic">A IA responde mensagens automaticamente</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateProfileAndSync(prev => ({ ...prev, isAiChatInterceptEnabled: !prev.isAiChatInterceptEnabled }))}
+                                                    className={`w-16 h-8 rounded-full relative transition-all duration-500 shadow-inner ${profile.isAiChatInterceptEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-white/10'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-xl transition-all duration-500 ${profile.isAiChatInterceptEnabled ? 'left-9 rotate-0' : 'left-1 -rotate-180'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-6 relative z-10">
+                                                <div className={`p-8 rounded-[2.5rem] border ${inputClasses} border-opacity-30`}>
+                                                    <p className="text-[11px] font-medium leading-relaxed opacity-80 italic">
+                                                        {profile.isAiChatInterceptEnabled
+                                                            ? "Ativado: Todas as mensagens recebidas serão processadas e respondidas pela sua IA. O chat será unificado com a personalidade dela."
+                                                            : "Desativado (Padrão): As mensagens de outros usuários cairão em um canal direto 'Humano-Humano', separado do chat da sua IA."}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Section: AI Receptionist / Guardian */}
                                         <div className={`p-10 rounded-[3rem] border ${cardClasses} relative overflow-hidden`}>
                                             <div className={`absolute top-0 right-0 w-32 h-32 ${profile.isAiReceptionistEnabled ? 'bg-emerald-500/10' : 'bg-rose-500/10'} blur-3xl rounded-full transition-all duration-700`} />
