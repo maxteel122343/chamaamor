@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { LocationInvite, UserProfile, PartnerProfile, CallLog, TransportMode, InviteStatus } from '../types';
+import { LocationInvite, UserProfile, PartnerProfile, CallLog, TransportMode, InviteStatus, Mood, VoiceName, Accent, CallbackIntensity, PlatformLanguage } from '../types';
 
 interface InvitesTabProps {
     user: any;
     profile: PartnerProfile;
     isDark: boolean;
     currentUserProfile?: UserProfile | null;
-    onCallPartner: () => void;
+    onCallPartner: (profile: PartnerProfile, isAi: boolean, callId: string) => void;
     onOpenChat: (target: UserProfile, isAi: boolean) => void;
 }
 
@@ -254,7 +254,36 @@ export const InvitesTab: React.FC<InvitesTabProps> = ({ user, profile, isDark, c
                                                 >
                                                     💬 Mensagem
                                                 </button>
-                                                <button onClick={() => onCallPartner()} className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500/10 text-blue-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all">
+                                                <button 
+                                                    onClick={() => {
+                                                        if (inv.sender_profile) {
+                                                            onCallPartner({
+                                                                name: inv.sender_profile.display_name,
+                                                                image: inv.sender_profile.avatar_url,
+                                                                personality: '',
+                                                                dailyContext: '',
+                                                                mood: Mood.LOVE,
+                                                                voice: VoiceName.Kore,
+                                                                accent: Accent.PAULISTA,
+                                                                intensity: CallbackIntensity.MEDIUM,
+                                                                theme: 'dark',
+                                                                relationshipScore: 100,
+                                                                history: [],
+                                                                language: PlatformLanguage.PT,
+                                                                gender: 'Desconhecido',
+                                                                sexuality: 'Desconhecido',
+                                                                bestFriend: '',
+                                                                currentPartnerId: inv.sender_profile.id,
+                                                                originalPartnerId: inv.sender_profile.id,
+                                                                originalPartnerNumber: inv.sender_profile.personal_number,
+                                                                currentPartnerNumber: inv.sender_profile.personal_number,
+                                                                originalPartnerNickname: inv.sender_profile.display_name,
+                                                                currentPartnerNickname: inv.sender_profile.display_name
+                                                            }, false, 'invite-' + inv.id);
+                                                        }
+                                                    }} 
+                                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500/10 text-blue-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all"
+                                                >
                                                     📞 Ligar
                                                 </button>
                                             </div>

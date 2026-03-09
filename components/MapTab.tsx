@@ -57,6 +57,14 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
 
     const cardClasses = isDark ? "bg-[#15181e] border-white/5" : "bg-white border-slate-100 shadow-sm";
     const inputClasses = isDark ? "bg-white/5 border-white/10 text-white focus:border-blue-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500";
+    
+    // Reset location states when modals close
+    useEffect(() => {
+        if (!showScheduleModal && !showInviteModal) {
+            setAddress('');
+            setCep('');
+        }
+    }, [showScheduleModal, showInviteModal]);
 
     useEffect(() => {
         if (navigator.geolocation) {
