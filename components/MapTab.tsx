@@ -189,11 +189,79 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className={`lg:col-span-2 rounded-[3rem] border overflow-hidden relative shadow-2xl h-[400px] md:h-[600px] ${cardClasses}`}>
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+                    {/* Search Bar Group */}
+                    <div className="absolute top-6 left-6 right-6 z-[60] flex gap-3">
+                        <div className="relative flex-1 group">
+                            <input
+                                type="text"
+                                placeholder="Buscar local para agendar..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        setLastSearchedPlace({ name: searchQuery, address: searchQuery });
+                                    }
+                                }}
+                                className={`w-full p-6 pl-14 rounded-[2rem] text-sm font-bold border outline-none transition-all shadow-2xl ${inputClasses}`}
+                            />
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-40 group-focus-within:opacity-100 transition-opacity">🔍</span>
+                            {searchQuery && (
+                                <button 
+                                    onClick={() => { setSearchQuery(''); setLastSearchedPlace(null); }}
+                                    className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/10 flex items-center justify-center text-[10px] hover:bg-black/20 z-10"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => setLastSearchedPlace({ name: searchQuery, address: searchQuery })}
+                            className="w-16 h-16 rounded-[2rem] bg-blue-600 text-white flex items-center justify-center text-xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                        >
+                            🎯
+                        </button>
+                    </div>
+
+                    {/* Interactive Location Card - Bottom Position to avoid overlap */}
+                    {lastSearchedPlace && (
+                        <div className={`absolute bottom-24 left-6 right-6 z-[70] p-6 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 animate-in slide-in-from-bottom-4 duration-500 ${cardClasses}`}>
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-2xl shrink-0">
+                                    📍
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <h4 className="text-xs font-black uppercase tracking-tight text-blue-600 truncate">{lastSearchedPlace.name}</h4>
+                                    <p className="text-[10px] opacity-40 truncate font-bold">{lastSearchedPlace.address}</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => {
+                                        setScheduleData({ ...scheduleData, title: lastSearchedPlace.name });
+                                        setAddress(lastSearchedPlace.address);
+                                        setShowScheduleModal(true);
+                                    }}
+                                    className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                                    title="Adicionar à Agenda"
+                                >
+                                    📅
+                                </button>
+                                <button 
+                                    onClick={() => toggleFavorite(lastSearchedPlace.name, lastSearchedPlace.address)}
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-lg ${favorites.some(f => f.name === lastSearchedPlace.name) ? 'bg-pink-600 text-white' : 'bg-white/10 opacity-50 hover:opacity-100 hover:scale-110'}`}
+                                >
+                                    {favorites.some(f => f.name === lastSearchedPlace.name) ? '❤️' : '🤍'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[80]">
                         {(showScheduleModal || showInviteModal) && (
                             <button 
                                 onClick={() => {
                                     setAddress(searchQuery);
+                                    // Visual feedback
                                     const btn = document.getElementById('capture-btn');
                                     if (btn) {
                                         btn.innerText = '✅ LOCAL CAPTURADO';
@@ -201,77 +269,10 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                     }
                                 }}
                                 id="capture-btn"
-                                className="px-8 py-4 bg-emerald-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-500"
+                                className="px-8 py-4 bg-emerald-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-500 whitespace-nowrap"
                             >
                                 📍 CONFIRMAR LOCALIZAÇÃO
                             </button>
-                        )}
-                    </div>
-
-                    <div className="absolute top-6 left-6 right-6 z-10 flex flex-col gap-3">
-                        <div className="flex gap-3">
-                            <div className="relative flex-1 group">
-                                <input
-                                    type="text"
-                                    placeholder="Buscar local para agendar..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            setLastSearchedPlace({ name: searchQuery, address: searchQuery });
-                                        }
-                                    }}
-                                    className={`w-full p-6 pl-14 rounded-[2rem] text-sm font-bold border outline-none transition-all shadow-2xl ${inputClasses}`}
-                                />
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-40 group-focus-within:opacity-100 transition-opacity">🔍</span>
-                                {searchQuery && (
-                                    <button 
-                                        onClick={() => { setSearchQuery(''); setLastSearchedPlace(null); }}
-                                        className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/10 flex items-center justify-center text-[10px] hover:bg-black/20"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-                            <button 
-                                onClick={() => setLastSearchedPlace({ name: searchQuery, address: searchQuery })}
-                                className="w-16 h-16 rounded-[2rem] bg-blue-600 text-white flex items-center justify-center text-xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all"
-                            >
-                                🎯
-                            </button>
-                        </div>
-
-                        {lastSearchedPlace && (
-                            <div className={`p-5 rounded-[2.5rem] border shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500 ${cardClasses} max-w-sm ml-2`}>
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl shrink-0">
-                                        📍
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <h4 className="text-[11px] font-black uppercase tracking-tight text-blue-600 truncate">{lastSearchedPlace.name}</h4>
-                                        <p className="text-[9px] opacity-40 truncate">{lastSearchedPlace.address}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => {
-                                            setScheduleData({ ...scheduleData, title: lastSearchedPlace.name });
-                                            setAddress(lastSearchedPlace.address);
-                                            setShowScheduleModal(true);
-                                        }}
-                                        className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg hover:scale-110 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
-                                        title="Adicionar à Agenda"
-                                    >
-                                        📅
-                                    </button>
-                                    <button 
-                                        onClick={() => toggleFavorite(lastSearchedPlace.name, lastSearchedPlace.address)}
-                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${favorites.some(f => f.name === lastSearchedPlace.name) ? 'bg-pink-600 text-white shadow-lg' : 'bg-white/5 opacity-50 hover:opacity-100 hover:scale-110'}`}
-                                    >
-                                        {favorites.some(f => f.name === lastSearchedPlace.name) ? '❤️' : '🤍'}
-                                    </button>
-                                </div>
-                            </div>
                         )}
                     </div>
                     <iframe
