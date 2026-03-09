@@ -357,19 +357,19 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); if (contact.profile) onOpenChat(contact.profile, contact.is_ai_contact); }}
-                                        className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                        className="w-12 h-12 bg-pink-600/10 text-pink-600 rounded-2xl flex items-center justify-center transition-all hover:bg-pink-600 hover:text-white shadow-sm"
                                         title="Chat"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
                                         </svg>
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleCallContact(contact); }}
-                                        className="w-10 h-10 bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                        className="w-12 h-12 bg-blue-600/10 text-blue-600 rounded-2xl flex items-center justify-center transition-all hover:bg-blue-600 hover:text-white shadow-sm"
                                         title="Ligar"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                                         </svg>
                                     </button>

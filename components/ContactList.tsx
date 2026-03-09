@@ -385,49 +385,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-30">Diretório de Conexões</p>
             </div>
 
-            {/* My ID Card */}
-            {myProfile && (
-                <div className={`p-5 md:p-8 rounded-[2rem] md:rounded-[3rem] border relative overflow-hidden ${cardClasses}`}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest opacity-30 italic">Minha Identidade Digital</h3>
-                            {myProfile?.blocked_users && myProfile.blocked_users.length > 0 && (
-                                <button
-                                    onClick={() => setShowBlocklistModal(true)}
-                                    className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-all"
-                                    title="Usuários Bloqueados"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex flex-col sm:flex-row gap-8">
-                            <div className="flex-1">
-                                <p className="text-[9px] font-black opacity-20 uppercase tracking-widest mb-1">Linha Pessoal</p>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-2xl font-black italic tracking-tighter text-blue-600">
-                                        {formatDisplayNumber(myProfile.personal_number, false)}
-                                    </p>
-                                    <button onClick={() => copyToClipboard(myProfile.personal_number)} className="opacity-30 hover:opacity-100 transition-opacity">📋</button>
-                                </div>
-                            </div>
-                            <div className="hidden sm:block w-[1px] bg-inherit opacity-20" />
-                            <div className="flex-1">
-                                <p className="text-[9px] font-black opacity-20 uppercase tracking-widest mb-1">Cortex AI (Público)</p>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-2xl font-black italic tracking-tighter text-pink-600">
-                                        {formatDisplayNumber(myProfile.ai_number, true)}
-                                    </p>
-                                    <button onClick={() => copyToClipboard(myProfile.ai_number)} className="opacity-30 hover:opacity-100 transition-opacity">📋</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Search Bar */}
             <div className="flex gap-4">
@@ -682,7 +640,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                             <div className="flex flex-col gap-1">
                                                 <button
                                                     onClick={() => onOpenChat(result, false)}
-                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
+                                                    className="w-10 h-10 bg-pink-600/10 text-pink-500 rounded-xl flex items-center justify-center transition-all hover:bg-pink-600 hover:text-white mb-1"
                                                     title="Chat Humano"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -706,7 +664,7 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                             <div className="flex flex-col gap-1">
                                                 <button
                                                     onClick={() => onOpenChat(result, true)}
-                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
+                                                    className="w-10 h-10 bg-pink-600/10 text-pink-500 rounded-xl flex items-center justify-center transition-all hover:bg-pink-600 hover:text-white mb-1"
                                                     title="Chat AI"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
