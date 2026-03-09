@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Mood, VoiceName, Accent, PartnerProfile, MOOD_EMOJIS, VOICE_META, ACCENT_META, CallbackIntensity, CallLog, ScheduledCall, PlatformLanguage, LANGUAGE_META, UserProfile, DEFAULT_RINGTONES } from '../types';
 import { ContactList } from './ContactList';
 import { AuthModal } from './AuthModal';
@@ -62,6 +62,37 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
     const historyInputRef = useRef<HTMLInputElement>(null);
     const ringtoneInputRef = useRef<HTMLInputElement>(null);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+    const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+    const fetchUnreadMessages = async () => {
+        if (!user) return;
+        const { count } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', user.id)
+            .eq('is_read', false);
+        setUnreadMessagesCount(count || 0);
+    };
+
+    useEffect(() => {
+        if (!user) return;
+        fetchUnreadMessages();
+
+        const channel = supabase
+            .channel('unread_messages_count')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'chat_messages'
+            }, () => {
+                fetchUnreadMessages();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user]);
     const [activeChat, setActiveChatState] = useState<{ profile: UserProfile, isAi: boolean } | null>(() => {
         const saved = sessionStorage.getItem('warm_activeChat');
         return saved ? JSON.parse(saved) : null;
@@ -516,7 +547,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                 <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto no-scrollbar">
                     {[
                         { id: 'contacts', label: 'Contatos', icon: '👤' },
-                        { id: 'chats', label: 'Chats', icon: '💬' },
+                        { id: 'chats', label: 'Chats', icon: '💬', badge: unreadMessagesCount },
                         { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
                         { id: 'calendar', label: 'Agenda', icon: '📅' },
@@ -534,7 +565,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                                 : `opacity-40 hover:opacity-100 ${isLight ? 'hover:bg-slate-100' : 'hover:bg-white/5'}`
                                 }`}
                         >
-                            <span className="text-xl flex-shrink-0 transition-transform group-hover:scale-110">{tab.icon}</span>
+                            <div className="relative">
+                                <span className="text-xl flex-shrink-0 transition-transform group-hover:scale-110">{tab.icon}</span>
+                                {tab.badge && tab.badge > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] bg-blue-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-[#0b0c10] px-0.5 animate-in zoom-in duration-300">
+                                        {tab.badge > 9 ? '9+' : tab.badge}
+                                    </span>
+                                )}
+                            </div>
                             {isSidebarExpanded && (
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate animate-in fade-in slide-in-from-left-4 duration-500">
                                     {tab.label}

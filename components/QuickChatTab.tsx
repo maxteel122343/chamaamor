@@ -19,7 +19,7 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [showAddSelector, setShowAddSelector] = useState(false);
-    const [lastMessages, setLastMessages] = useState<Record<string, { content: string, is_read: boolean, sender_id: string, is_to_ai?: boolean }>>({});
+    const [lastMessages, setLastMessages] = useState<Record<string, { content: string, is_read: boolean, sender_id: string, created_at: string, is_to_ai?: boolean }>>({});
 
     const isLight = !isDark;
     const cardClasses = isDark ? "bg-[#15181e] border-white/5" : "bg-white border-slate-100 shadow-sm";
@@ -45,9 +45,29 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
         localStorage.setItem('QUICK_PINNED_IDS', JSON.stringify(pinnedIds));
     }, [pinnedIds]);
 
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const channel = supabase
+            .channel('quick_chat_realtime')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat_messages'
+            }, () => {
+                fetchContacts();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [currentUser]);
+
     const fetchContacts = async () => {
         setLoading(true);
-        const { data } = await supabase
+        // 1. Fetch Explicit Contacts
+        const { data: contactData } = await supabase
             .from('contacts')
             .select(`
                 *,
@@ -55,35 +75,84 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
             `)
             .eq('owner_id', currentUser.id);
 
-        if (data) {
-            setContacts(data);
-            // Fetch last messages for all contacts
-            data.forEach(async (c) => {
-                const { data: msgData } = await supabase
-                    .from('chat_messages')
-                    .select('content, is_read, sender_id')
-                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${c.target_id}),and(sender_id.eq.${c.target_id},receiver_id.eq.${currentUser.id})`)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
+        let allContacts: Contact[] = contactData || [];
+        const contactIds = new Set(allContacts.map(c => c.target_id));
 
-                if (msgData) {
-                    setLastMessages(prev => ({ ...prev, [c.target_id]: msgData }));
-                }
+        // 2. Fetch unique partners from message history
+        try {
+            const { data: sentMsgs } = await supabase
+                .from('chat_messages')
+                .select('receiver_id, is_to_ai')
+                .eq('sender_id', currentUser.id);
+
+            const { data: recvMsgs } = await supabase
+                .from('chat_messages')
+                .select('sender_id, is_to_ai')
+                .eq('receiver_id', currentUser.id);
+
+            const historyPartners = new Map<string, boolean>();
+            sentMsgs?.forEach(m => {
+                if (m.receiver_id !== currentUser.id) historyPartners.set(m.receiver_id, !!m.is_to_ai);
+            });
+            recvMsgs?.forEach(m => {
+                if (m.sender_id !== currentUser.id) historyPartners.set(m.sender_id, !!m.is_to_ai);
             });
 
-            // Also fetch for main AI
-            const { data: mainMsg } = await supabase
+            const newPartnerIds = Array.from(historyPartners.keys()).filter(id => !contactIds.has(id));
+
+            if (newPartnerIds.length > 0) {
+                const { data: newProfiles } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .in('id', newPartnerIds);
+
+                if (newProfiles) {
+                    newProfiles.forEach(p => {
+                        allContacts.push({
+                            id: `virtual-${p.id}`,
+                            owner_id: currentUser.id,
+                            target_id: p.id,
+                            is_ai_contact: historyPartners.get(p.id) || false,
+                            alias: null,
+                            profile: p
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao buscar parceiros de chat:", err);
+        }
+
+        setContacts(allContacts);
+
+        // 3. Fetch last messages for all identified contacts
+        allContacts.forEach(async (c) => {
+            const { data: msgData } = await supabase
                 .from('chat_messages')
-                .select('content, is_read, sender_id, is_to_ai')
-                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id})`)
+                .select('content, is_read, sender_id, created_at')
+                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${c.target_id}),and(sender_id.eq.${c.target_id},receiver_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
-            if (mainMsg) {
-                setLastMessages(prev => ({ ...prev, [currentUser.id]: mainMsg }));
+                .maybeSingle();
+
+            if (msgData) {
+                setLastMessages(prev => ({ ...prev, [c.target_id]: msgData }));
             }
+        });
+
+        // Also fetch for main AI
+        const { data: mainMsg } = await supabase
+            .from('chat_messages')
+            .select('content, is_read, sender_id, created_at, is_to_ai')
+            .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id})`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (mainMsg) {
+            setLastMessages(prev => ({ ...prev, [currentUser.id]: mainMsg }));
         }
+
         setLoading(false);
     };
 
@@ -137,7 +206,13 @@ export const QuickChatTab: React.FC<QuickChatTabProps> = ({ currentUser, profile
     );
 
     const pinnedList = filteredContacts.filter(c => pinnedIds.includes(c.id));
-    const recentList = filteredContacts.filter(c => !pinnedIds.includes(c.id));
+    const recentList = filteredContacts
+        .filter(c => !pinnedIds.includes(c.id))
+        .sort((a, b) => {
+            const dateA = lastMessages[a.target_id]?.created_at || '0';
+            const dateB = lastMessages[b.target_id]?.created_at || '0';
+            return dateB.localeCompare(dateA);
+        });
 
     return (
         <div className="w-full h-full flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
