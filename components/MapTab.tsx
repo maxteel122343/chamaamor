@@ -254,9 +254,9 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className={`lg:col-span-2 rounded-[3rem] border overflow-hidden relative shadow-2xl h-[400px] md:h-[600px] ${cardClasses}`}>
-                    {/* Search Bar Group */}
-                    <div className="absolute top-6 left-6 right-6 z-[60] flex gap-3">
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    {/* Search Bar Group - Integrated Header Style */}
+                    <div className={`p-4 rounded-[2.5rem] border shadow-2xl flex gap-3 ${cardClasses}`}>
                         <div className="relative flex-1 group">
                             <input
                                 type="text"
@@ -268,7 +268,7 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                                         setLastSearchedPlace({ name: searchQuery, address: searchQuery });
                                     }
                                 }}
-                                className={`w-full p-6 pl-14 rounded-[2rem] text-sm font-bold border outline-none transition-all shadow-2xl ${inputClasses}`}
+                                className={`w-full p-6 pl-14 rounded-[2rem] text-sm font-bold border outline-none transition-all shadow-md ${inputClasses}`}
                             />
                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-40 group-focus-within:opacity-100 transition-opacity">🔍</span>
                             {searchQuery && (
@@ -282,24 +282,26 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                         </div>
                         <button 
                             onClick={() => setLastSearchedPlace({ name: searchQuery, address: searchQuery })}
-                            className="w-16 h-16 rounded-[2rem] bg-blue-600 text-white flex items-center justify-center text-xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                            className="w-20 h-20 rounded-[2rem] bg-blue-600 text-white flex items-center justify-center text-xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                            title="Buscar no Mapa"
                         >
                             🎯
                         </button>
                     </div>
 
-                    {/* Interactive Location Card - Bottom Position to avoid overlap */}
-                    {lastSearchedPlace && (
-                        <div className={`absolute bottom-24 left-6 right-6 z-[70] p-6 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 animate-in slide-in-from-bottom-4 duration-500 ${cardClasses}`}>
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-2xl shrink-0">
-                                    📍
+                    <div className={`rounded-[3rem] border overflow-hidden relative shadow-2xl h-[400px] md:h-[600px] ${cardClasses}`}>
+                        {/* Interactive Location Card - Bottom Position to avoid overlap */}
+                        {lastSearchedPlace && (
+                            <div className={`absolute bottom-24 left-6 right-6 z-[70] p-6 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 animate-in slide-in-from-bottom-4 duration-500 ${cardClasses}`}>
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-2xl shrink-0">
+                                        📍
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <h4 className="text-xs font-black uppercase tracking-tight text-blue-600 truncate">{lastSearchedPlace.name}</h4>
+                                        <p className="text-[10px] opacity-40 truncate font-bold">{lastSearchedPlace.address}</p>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col min-w-0">
-                                    <h4 className="text-xs font-black uppercase tracking-tight text-blue-600 truncate">{lastSearchedPlace.name}</h4>
-                                    <p className="text-[10px] opacity-40 truncate font-bold">{lastSearchedPlace.address}</p>
-                                </div>
-                            </div>
                             <div className="flex gap-3">
                                 <button 
                                     onClick={() => {
@@ -361,6 +363,7 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                         allowFullScreen
                     ></iframe>
                 </div>
+            </div>
 
                 <div className="flex flex-col gap-6">
                     <div className={`p-8 rounded-[3rem] border flex flex-col gap-6 ${cardClasses}`}>
