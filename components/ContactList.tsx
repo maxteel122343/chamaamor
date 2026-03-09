@@ -459,104 +459,6 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
 
             {/* Combined Results Container */}
             <div className="flex flex-col gap-10">
-                {/* Search Results List (Discovery) */}
-                {searchResults.length > 0 && (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-6 duration-500">
-                        <div className="flex items-center gap-3 ml-4">
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 italic">Novas Descobertas (Global)</p>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            {searchResults.map((result) => (
-                                <div key={result.id} className={`p-6 rounded-[2.5rem] border-2 border-blue-600/20 ${cardClasses} shadow-xl hover:border-blue-600/40 transition-all group`}>
-                                    <div className="flex flex-col sm:flex-row items-center gap-5">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-600/10 flex items-center justify-center text-2xl overflow-hidden border border-blue-500/10 group-hover:scale-105 transition-transform">
-                                            {result.ai_settings?.image ? (
-                                                <img src={result.ai_settings.image} className="w-full h-full object-cover" />
-                                            ) : result.avatar_url ? (
-                                                <img src={result.avatar_url} className="w-full h-full object-cover" />
-                                            ) : '👤'}
-                                        </div>
-                                        <div className="flex-1 text-center sm:text-left">
-                                            <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                                <h4 className="text-lg font-black italic tracking-tighter uppercase">
-                                                    {result.nickname || result.display_name}
-                                                </h4>
-                                                {contacts.some(c => c.target_id === result.id) && (
-                                                    <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 uppercase tracking-widest border border-emerald-500/20">Nos Contatos</span>
-                                                )}
-                                            </div>
-                                            {result.ai_settings?.name && (
-                                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1 italic">I.A.: {result.ai_settings.name}</p>
-                                            )}
-                                            <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-1">
-                                                <div className="flex items-center gap-1.5 opacity-40">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-500">Hu</span>
-                                                    <p className="text-[10px] font-bold">{formatDisplayNumber(result.personal_number, false)}</p>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 opacity-40">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-pink-500">Ai</span>
-                                                    <p className="text-[10px] font-bold">{formatDisplayNumber(result.ai_number, true)}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <div className="flex flex-col gap-1">
-                                                <button
-                                                    onClick={() => onOpenChat(result, false)}
-                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
-                                                    title="Chat Humano"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => addContact(result, false)}
-                                                    disabled={contacts.some(c => c.target_id === result.id && !c.is_ai_contact)}
-                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${contacts.some(c => c.target_id === result.id && !c.is_ai_contact) ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed opacity-50' : 'bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white'}`}
-                                                >
-                                                    {contacts.some(c => c.target_id === result.id && !c.is_ai_contact) ? 'Salvo' : '+ Humano'}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCallDirect(result, false)}
-                                                    className="px-4 py-1.5 text-[8px] font-black uppercase opacity-30 hover:opacity-100 italic"
-                                                >
-                                                    Ligar Direto
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <button
-                                                    onClick={() => onOpenChat(result, true)}
-                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
-                                                    title="Chat AI"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => addContact(result, true)}
-                                                    disabled={contacts.some(c => c.target_id === result.id && c.is_ai_contact)}
-                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${contacts.some(c => c.target_id === result.id && c.is_ai_contact) ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed opacity-50' : 'bg-pink-600 text-white hover:bg-pink-700 shadow-lg shadow-pink-600/20'}`}
-                                                >
-                                                    {contacts.some(c => c.target_id === result.id && c.is_ai_contact) ? 'Salvo' : '+ AI'}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCallDirect(result, true)}
-                                                    className="px-4 py-1.5 text-[8px] font-black uppercase opacity-30 hover:opacity-100 italic"
-                                                >
-                                                    Ligar AI Direto
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Contacts / Online Tabs Card */}
                 <div className={`rounded-[2rem] md:rounded-[3rem] border overflow-hidden ${cardClasses} transition-all`}>
                     <div className="flex border-b border-inherit">
@@ -680,21 +582,158 @@ export const ContactList: React.FC<ContactListProps> = ({ currentUser, onCallPar
                                             </div>
                                             <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mt-1">Conectado Agora</p>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                setSearchQuery(u.display_name);
-                                                searchContact();
-                                            }}
-                                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${contacts.some(c => c.target_id === u.id) ? 'bg-blue-600/10 text-blue-500 hover:bg-blue-600 hover:text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20'}`}
-                                        >
-                                            {contacts.some(c => c.target_id === u.id) ? 'Ver Perfil' : 'Conectar'}
-                                        </button>
+                                        {contacts.some(c => c.target_id === u.id) ? (
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        const contact = contacts.find(c => c.target_id === u.id);
+                                                        if (contact?.profile) onOpenChat(contact.profile, contact.is_ai_contact);
+                                                    }}
+                                                    className="w-10 h-10 bg-pink-600/10 text-pink-500 rounded-xl hover:bg-pink-600 hover:text-white transition-all flex items-center justify-center"
+                                                    title="Chat"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const contact = contacts.find(c => c.target_id === u.id);
+                                                        if (contact?.profile) handleCallDirect(contact.profile as any, contact.is_ai_contact);
+                                                    }}
+                                                    className="w-12 h-12 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                                                    title="Ligar"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setSearchQuery(u.display_name);
+                                                        searchContact();
+                                                    }}
+                                                    className="w-10 h-10 bg-emerald-600/10 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center"
+                                                    title="Ver Perfil"
+                                                >
+                                                    <span className="text-sm">🔍</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => addContact(u, false)}
+                                                    className="w-10 h-10 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center font-black text-xl"
+                                                    title="Adicionar aos Contatos"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </>
                         )}
                     </div>
                 </div>
+
+                {/* Search Results List (Discovery) */}
+                {searchResults.length > 0 && (
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-6 duration-500">
+                        <div className="flex items-center gap-3 ml-4">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 italic">Novas Descobertas (Global)</p>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {searchResults.map((result) => (
+                                <div key={result.id} className={`p-6 rounded-[2.5rem] border-2 border-blue-600/20 ${cardClasses} shadow-xl hover:border-blue-600/40 transition-all group`}>
+                                    <div className="flex flex-col sm:flex-row items-center gap-5">
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-600/10 flex items-center justify-center text-2xl overflow-hidden border border-blue-500/10 group-hover:scale-105 transition-transform">
+                                            {result.ai_settings?.image ? (
+                                                <img src={result.ai_settings.image} className="w-full h-full object-cover" />
+                                            ) : result.avatar_url ? (
+                                                <img src={result.avatar_url} className="w-full h-full object-cover" />
+                                            ) : '👤'}
+                                        </div>
+                                        <div className="flex-1 text-center sm:text-left">
+                                            <div className="flex items-center gap-2 justify-center sm:justify-start">
+                                                <h4 className="text-lg font-black italic tracking-tighter uppercase">
+                                                    {result.nickname || result.display_name}
+                                                </h4>
+                                                {contacts.some(c => c.target_id === result.id) && (
+                                                    <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 uppercase tracking-widest border border-emerald-500/20">Nos Contatos</span>
+                                                )}
+                                            </div>
+                                            {result.ai_settings?.name && (
+                                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1 italic">I.A.: {result.ai_settings.name}</p>
+                                            )}
+                                            <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-1">
+                                                <div className="flex items-center gap-1.5 opacity-40">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-500">Hu</span>
+                                                    <p className="text-[10px] font-bold">{formatDisplayNumber(result.personal_number, false)}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 opacity-40">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-pink-500">Ai</span>
+                                                    <p className="text-[10px] font-bold">{formatDisplayNumber(result.ai_number, true)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <div className="flex flex-col gap-1">
+                                                <button
+                                                    onClick={() => onOpenChat(result, false)}
+                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
+                                                    title="Chat Humano"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => addContact(result, false)}
+                                                    disabled={contacts.some(c => c.target_id === result.id && !c.is_ai_contact)}
+                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${contacts.some(c => c.target_id === result.id && !c.is_ai_contact) ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed opacity-50' : 'bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white'}`}
+                                                >
+                                                    {contacts.some(c => c.target_id === result.id && !c.is_ai_contact) ? 'Salvo' : '+ Humano'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCallDirect(result, false)}
+                                                    className="px-4 py-1.5 text-[8px] font-black uppercase opacity-30 hover:opacity-100 italic"
+                                                >
+                                                    Ligar Direto
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <button
+                                                    onClick={() => onOpenChat(result, true)}
+                                                    className="w-10 h-10 bg-pink-600/10 hover:bg-pink-600 text-pink-500 hover:text-white rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 mb-1"
+                                                    title="Chat AI"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => addContact(result, true)}
+                                                    disabled={contacts.some(c => c.target_id === result.id && c.is_ai_contact)}
+                                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${contacts.some(c => c.target_id === result.id && c.is_ai_contact) ? 'bg-slate-500/10 text-slate-400 cursor-not-allowed opacity-50' : 'bg-pink-600 text-white hover:bg-pink-700 shadow-lg shadow-pink-600/20'}`}
+                                                >
+                                                    {contacts.some(c => c.target_id === result.id && c.is_ai_contact) ? 'Salvo' : '+ AI'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCallDirect(result, true)}
+                                                    className="px-4 py-1.5 text-[8px] font-black uppercase opacity-30 hover:opacity-100 italic"
+                                                >
+                                                    Ligar AI Direto
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Manual Add Modal */}
