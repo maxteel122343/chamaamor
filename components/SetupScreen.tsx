@@ -551,11 +551,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
                 {/* Navigation Links */}
                 <nav className="flex-1 w-full px-3 space-y-2 overflow-y-auto no-scrollbar">
                     {[
+                        { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'contacts', label: 'Contatos', icon: '👤' },
                         { id: 'chats', label: 'Chats', icon: '💬', badge: unreadMessagesCount },
-                        { id: 'invites', label: 'Convites', icon: '💌', badge: pendingInvitesCount },
-                        { id: 'dashboard', label: 'Início', icon: '🏠' },
                         { id: 'map', label: 'Mapa', icon: '📍' },
+                        { id: 'invites', label: 'Convites', icon: '💌', badge: pendingInvitesCount },
                         { id: 'gallery', label: 'Galeria', icon: '🖼️' },
                         { id: 'calendar', label: 'Agenda', icon: '📅' },
                         { id: 'memory', label: 'Memória', icon: '🧠' },

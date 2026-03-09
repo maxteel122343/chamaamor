@@ -186,7 +186,7 @@ export interface Contact {
   profile?: UserProfile;
 }
 
-export type InviteStatus = 'pending' | 'accepted' | 'rejected';
+export type InviteStatus = 'pending' | 'accepted' | 'rejected' | 'canceled';
 export type TransportMode = 'car' | 'foot' | 'bus';
 
 export interface LocationInvite {
@@ -198,9 +198,14 @@ export interface LocationInvite {
   trigger_at: string;
   status: InviteStatus;
   created_at: string;
+  description?: string;
   transport_mode?: TransportMode;
   estimated_time?: number; // in minutes
   sender_profile?: UserProfile;
+  ai_reminder_call?: {
+    enabled: boolean;
+    interval: 'week' | 'day' | 'hour' | 'same_day';
+  };
 }
 
 export interface Reminder {
@@ -210,6 +215,7 @@ export interface Reminder {
   trigger_at: string; // ISO string
   is_completed: boolean;
   created_at: string;
+  description?: string;
   creator_ai_id?: string | null;
   creator_ai_name?: string | null;
   creator_ai_number?: string | null;
@@ -223,6 +229,10 @@ export interface Reminder {
     prepare_minutes_before?: number;
   };
   invite_id?: string;
+  ai_reminder_call?: {
+    enabled: boolean;
+    interval: 'week' | 'day' | 'hour' | 'same_day';
+  };
 }
 export interface ChatMessage {
   id: string;
