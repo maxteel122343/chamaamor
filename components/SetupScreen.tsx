@@ -968,7 +968,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ profile, setProfile, o
 
                         {activeTab === 'map' && user && (
                             <div className="w-full max-w-5xl mx-auto">
-                                <MapTab user={user} profile={profile} setProfile={setProfile} currentUserProfile={currentUserProfile} isDark={isDark} />
+                                <MapTab user={user} profile={profile} setProfile={setProfile} currentUserProfile={currentUserProfile} isDark={isDark} onStartCall={onStartCall} />
                             </div>
                         )}
 

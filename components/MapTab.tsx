@@ -8,9 +8,10 @@ interface MapTabProps {
     setProfile: React.Dispatch<React.SetStateAction<PartnerProfile>>;
     currentUserProfile?: UserProfile | null;
     isDark: boolean;
+    onStartCall: () => void;
 }
 
-export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, currentUserProfile, isDark }) => {
+export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, currentUserProfile, isDark, onStartCall }) => {
     const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
     const [address, setAddress] = useState<string>('');
     const [cep, setCep] = useState<string>('');
@@ -218,6 +219,32 @@ export const MapTab: React.FC<MapTabProps> = ({ user, profile, setProfile, curre
                 <div>
                     <h2 className="text-3xl font-black tracking-tighter italic uppercase">Mapa de Conexão</h2>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-30">Localização & Agendamento Geográfico</p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setShowInviteModal(true)}
+                        className={`group flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${isDark ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-white border-slate-100 hover:bg-slate-50 shadow-sm'}`}
+                        title="Convidar alguém"
+                    >
+                        <span className="text-xl group-hover:animate-bounce">💌</span>
+                        <div className="text-left">
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Enviar Convite</p>
+                            <p className="text-xs font-black uppercase italic tracking-tighter text-blue-600">Convidar Amigo</p>
+                        </div>
+                    </button>
+
+                    <button 
+                        onClick={onStartCall}
+                        className={`group flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${isDark ? 'bg-blue-600/10 border-blue-600/20 hover:bg-blue-600/20' : 'bg-blue-50 border-blue-100 hover:bg-blue-100 shadow-sm'}`}
+                        title="Ligar para IA agendar"
+                    >
+                        <span className="text-xl group-hover:scale-125 transition-transform">🎙️</span>
+                        <div className="text-left">
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Concierge Digital</p>
+                            <p className="text-xs font-black uppercase italic tracking-tighter text-blue-600">Agendar via IA</p>
+                        </div>
+                    </button>
                 </div>
             </div>
 
